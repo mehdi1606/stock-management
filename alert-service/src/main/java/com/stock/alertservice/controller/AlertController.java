@@ -1,6 +1,7 @@
 package com.stock.alertservice.controller;
 
 import com.stock.alertservice.dto.request.AlertAcknowledgeRequest;
+import com.stock.alertservice.dto.request.AlertCreateRequest;
 import com.stock.alertservice.dto.request.AlertFilterRequest;
 import com.stock.alertservice.dto.request.AlertResolveRequest;
 import com.stock.alertservice.dto.response.AlertResponse;
@@ -38,7 +39,6 @@ public class AlertController {
     // ==================== CREATE ====================
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'SYSTEM')")
     @Operation(summary = "Créer une alerte", description = "Crée une nouvelle alerte dans le système")
     public ResponseEntity<ApiResponse<AlertResponse>> createAlert(
             @Parameter(description = "Type d'alerte") @RequestParam AlertType type,
@@ -69,7 +69,6 @@ public class AlertController {
     // ==================== READ ====================
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Récupérer une alerte par ID", description = "Récupère les détails d'une alerte par son ID")
     public ResponseEntity<ApiResponse<AlertResponse>> getAlertById(
             @Parameter(description = "ID de l'alerte") @PathVariable String id) {
@@ -82,7 +81,6 @@ public class AlertController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Récupérer toutes les alertes", description = "Récupère toutes les alertes avec pagination")
     public ResponseEntity<PageResponse<AlertResponse>> getAllAlerts(
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
@@ -98,7 +96,6 @@ public class AlertController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Récupérer les alertes actives", description = "Récupère toutes les alertes actives")
     public ResponseEntity<PageResponse<AlertResponse>> getActiveAlerts(
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
@@ -112,7 +109,6 @@ public class AlertController {
     }
 
     @GetMapping("/unacknowledged")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Récupérer les alertes non acquittées", description = "Récupère toutes les alertes qui n'ont pas encore été acquittées")
     public ResponseEntity<PageResponse<AlertResponse>> getUnacknowledgedAlerts(
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
@@ -126,7 +122,6 @@ public class AlertController {
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Récupérer les alertes par statut", description = "Récupère les alertes par statut")
     public ResponseEntity<PageResponse<AlertResponse>> getAlertsByStatus(
             @Parameter(description = "Statut de l'alerte") @PathVariable AlertStatus status,
@@ -141,7 +136,6 @@ public class AlertController {
     }
 
     @GetMapping("/type/{type}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Récupérer les alertes par type", description = "Récupère les alertes par type")
     public ResponseEntity<PageResponse<AlertResponse>> getAlertsByType(
             @Parameter(description = "Type d'alerte") @PathVariable AlertType type,
@@ -156,7 +150,6 @@ public class AlertController {
     }
 
     @GetMapping("/level/{level}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Récupérer les alertes par niveau", description = "Récupère les alertes par niveau de gravité")
     public ResponseEntity<PageResponse<AlertResponse>> getAlertsByLevel(
             @Parameter(description = "Niveau de l'alerte") @PathVariable AlertLevel level,
@@ -171,7 +164,6 @@ public class AlertController {
     }
 
     @GetMapping("/entity/{entityType}/{entityId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Récupérer les alertes par entité", description = "Récupère les alertes pour une entité spécifique")
     public ResponseEntity<PageResponse<AlertResponse>> getAlertsByEntity(
             @Parameter(description = "Type d'entité") @PathVariable String entityType,
@@ -190,7 +182,6 @@ public class AlertController {
     // ==================== UPDATE ====================
 
     @PatchMapping("/{id}/acknowledge")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER')")
     @Operation(summary = "Prendre en compte une alerte", description = "Marque une alerte comme prise en compte")
     public ResponseEntity<ApiResponse<AlertResponse>> acknowledgeAlert(
             @Parameter(description = "ID de l'alerte") @PathVariable String id,
@@ -204,7 +195,6 @@ public class AlertController {
     }
 
     @PatchMapping("/{id}/resolve")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER')")
     @Operation(summary = "Résoudre une alerte", description = "Marque une alerte comme résolue")
     public ResponseEntity<ApiResponse<AlertResponse>> resolveAlert(
             @Parameter(description = "ID de l'alerte") @PathVariable String id,
@@ -218,7 +208,6 @@ public class AlertController {
     }
 
     @PatchMapping("/{id}/escalate")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER')")
     @Operation(summary = "Escalader une alerte", description = "Escalade une alerte au niveau supérieur")
     public ResponseEntity<ApiResponse<AlertResponse>> escalateAlert(
             @Parameter(description = "ID de l'alerte") @PathVariable String id) {
@@ -233,7 +222,6 @@ public class AlertController {
     // ==================== DELETE ====================
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Supprimer une alerte", description = "Supprime une alerte définitivement")
     public ResponseEntity<ApiResponse<Void>> deleteAlert(
             @Parameter(description = "ID de l'alerte") @PathVariable String id) {
@@ -248,7 +236,6 @@ public class AlertController {
     // ==================== SEARCH ====================
 
     @PostMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Rechercher des alertes", description = "Recherche des alertes avec des filtres avancés")
     public ResponseEntity<PageResponse<AlertResponse>> searchAlerts(
             @Valid @RequestBody AlertFilterRequest filter,
@@ -265,7 +252,6 @@ public class AlertController {
     // ==================== STATISTICS ====================
 
     @GetMapping("/statistics")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ALERT_MANAGER', 'VIEWER')")
     @Operation(summary = "Obtenir les statistiques des alertes", description = "Récupère les statistiques globales des alertes")
     public ResponseEntity<ApiResponse<AlertStatisticsResponse>> getAlertStatistics() {
         log.info("REST request to get alert statistics");

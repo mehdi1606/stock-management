@@ -30,6 +30,7 @@ public class MovementEventConsumer {
 
     private final InventoryRepository inventoryRepository;
     private final InventoryEventPublisher eventPublisher;
+    private final com.stock.inventoryservice.client.AlertClient alertClient; // 🚨 ADD ALERT CLIENT
 
     /**
      * 🎯 MAIN LISTENER - Processes movement completion
@@ -147,8 +148,11 @@ public class MovementEventConsumer {
         inventory.setLastCountDate(LocalDate.now());
 
         Inventory saved = inventoryRepository.save(inventory);
-        log.info("✅ Increased inventory: {} units now at location {}", 
+        log.info("✅ Increased inventory: {} units now at location {}",
                 saved.getQuantityOnHand(), locationId);
+
+        // Check for low stock alerts
+        checkLowStockAndCreateAlert(saved);
 
         // Publish event
         publishInventoryUpdate(saved, "INBOUND_RECEIVED", quantity);
@@ -177,8 +181,11 @@ public class MovementEventConsumer {
         inventory.setLastCountDate(LocalDate.now());
 
         Inventory saved = inventoryRepository.save(inventory);
-        log.info("✅ Decreased inventory: {} units remain at location {}", 
+        log.info("✅ Decreased inventory: {} units remain at location {}",
                 saved.getQuantityOnHand(), locationId);
+
+        // Check for low stock alerts
+        checkLowStockAndCreateAlert(saved);
 
         publishInventoryUpdate(saved, "OUTBOUND_SHIPPED", -quantity);
     }
@@ -205,8 +212,11 @@ public class MovementEventConsumer {
 
         sourceInventory.setQuantityOnHand(sourceInventory.getQuantityOnHand() - quantity);
         sourceInventory.setQuantityReserved(Math.max(0, sourceInventory.getQuantityReserved() - quantity));
-        inventoryRepository.save(sourceInventory);
-        log.info("✅ Decreased source: {} units remain", sourceInventory.getQuantityOnHand());
+        Inventory savedSource = inventoryRepository.save(sourceInventory);
+        log.info("✅ Decreased source: {} units remain", savedSource.getQuantityOnHand());
+
+        // Check for low stock alerts at source location
+        checkLowStockAndCreateAlert(savedSource);
 
         // 2️⃣ INCREASE at destination
         Inventory destInventory = inventoryRepository
@@ -216,6 +226,9 @@ public class MovementEventConsumer {
         destInventory.setQuantityOnHand(destInventory.getQuantityOnHand() + quantity);
         Inventory savedDest = inventoryRepository.save(destInventory);
         log.info("✅ Increased destination: {} units now available", savedDest.getQuantityOnHand());
+
+        // Check for low stock alerts at destination location
+        checkLowStockAndCreateAlert(savedDest);
 
         publishInventoryUpdate(savedDest, "TRANSFER_COMPLETED", quantity);
     }
@@ -246,6 +259,9 @@ public class MovementEventConsumer {
 
         Inventory saved = inventoryRepository.save(inventory);
         log.info("✅ Adjusted inventory: {} → {} units", oldQuantity, quantity);
+
+        // Check for low stock alerts
+        checkLowStockAndCreateAlert(saved);
 
         publishInventoryUpdate(saved, "ADJUSTMENT", quantity - oldQuantity);
     }
@@ -293,6 +309,55 @@ public class MovementEventConsumer {
         eventPublisher.publishInventoryEvent(event);
     }
 
+    /**
+     * 🚨 Check for low stock and create alerts
+     * Called after every inventory update to monitor stock levels
+     */
+    private void checkLowStockAndCreateAlert(Inventory inventory) {
+        Double quantity = inventory.getAvailableQuantity(); // OnHand - Reserved
+
+        final Double CRITICAL_THRESHOLD = 5.0;
+        final Double WARNING_THRESHOLD = 10.0;
+
+        try {
+            if (quantity < CRITICAL_THRESHOLD) {
+                String message = String.format(
+                    "CRITICAL: Item %s has only %.2f units available at location %s (threshold: %.0f)",
+                    inventory.getItemId(), quantity, inventory.getLocationId(), CRITICAL_THRESHOLD
+                );
+
+                alertClient.createLowStockAlert(
+                    inventory.getItemId(),
+                    inventory.getLocationId(),
+                    quantity,
+                    CRITICAL_THRESHOLD
+                );
+
+                log.warn("🚨 CRITICAL LOW STOCK after movement: Item {}, Location {}, Qty: {}",
+                        inventory.getItemId(), inventory.getLocationId(), quantity);
+            }
+            else if (quantity < WARNING_THRESHOLD) {
+                String message = String.format(
+                    "WARNING: Item %s has %.2f units available at location %s (threshold: %.0f)",
+                    inventory.getItemId(), quantity, inventory.getLocationId(), WARNING_THRESHOLD
+                );
+
+                alertClient.createLowStockAlert(
+                    inventory.getItemId(),
+                    inventory.getLocationId(),
+                    quantity,
+                    WARNING_THRESHOLD
+                );
+
+                log.warn("⚠️ WARNING LOW STOCK after movement: Item {}, Location {}, Qty: {}",
+                        inventory.getItemId(), inventory.getLocationId(), quantity);
+            }
+        } catch (Exception e) {
+            log.error("❌ Failed to create low stock alert after movement for item {}: {}",
+                    inventory.getItemId(), e.getMessage());
+        }
+    }
+
     // ========================================
     // NEW MOVEMENT TYPE HANDLERS
     // ========================================
@@ -322,6 +387,9 @@ public class MovementEventConsumer {
         log.info("✅ RECEIPT complete: {} units now at location {}",
                 saved.getQuantityOnHand(), locationId);
 
+        // Check for low stock alerts
+        checkLowStockAndCreateAlert(saved);
+
         publishInventoryUpdate(saved, "RECEIPT", quantity);
     }
 
@@ -350,6 +418,9 @@ public class MovementEventConsumer {
         log.info("✅ ISSUE complete: {} units remain at location {}",
                 saved.getQuantityOnHand(), locationId);
 
+        // Check for low stock alerts
+        checkLowStockAndCreateAlert(saved);
+
         publishInventoryUpdate(saved, "ISSUE", -quantity);
     }
 
@@ -374,8 +445,11 @@ public class MovementEventConsumer {
                 .orElseThrow(() -> new RuntimeException("Source inventory not found for PICKING"));
 
         sourceInventory.setQuantityOnHand(sourceInventory.getQuantityOnHand() - quantity);
-        inventoryRepository.save(sourceInventory);
-        log.info("✅ Decreased source (storage): {} units remain", sourceInventory.getQuantityOnHand());
+        Inventory savedSource = inventoryRepository.save(sourceInventory);
+        log.info("✅ Decreased source (storage): {} units remain", savedSource.getQuantityOnHand());
+
+        // Check for low stock alerts at source location
+        checkLowStockAndCreateAlert(savedSource);
 
         // Increase at destination (staging/packing area) and mark as reserved
         Inventory destInventory = inventoryRepository
@@ -387,6 +461,9 @@ public class MovementEventConsumer {
         Inventory savedDest = inventoryRepository.save(destInventory);
         log.info("✅ Increased destination (staging): {} units, {} reserved",
                 savedDest.getQuantityOnHand(), savedDest.getQuantityReserved());
+
+        // Check for low stock alerts at destination location
+        checkLowStockAndCreateAlert(savedDest);
 
         publishInventoryUpdate(savedDest, "PICKING", quantity);
     }
@@ -412,8 +489,11 @@ public class MovementEventConsumer {
                 .orElseThrow(() -> new RuntimeException("Source inventory not found for PUTAWAY"));
 
         sourceInventory.setQuantityOnHand(sourceInventory.getQuantityOnHand() - quantity);
-        inventoryRepository.save(sourceInventory);
-        log.info("✅ Decreased source (receiving): {} units remain", sourceInventory.getQuantityOnHand());
+        Inventory savedSource = inventoryRepository.save(sourceInventory);
+        log.info("✅ Decreased source (receiving): {} units remain", savedSource.getQuantityOnHand());
+
+        // Check for low stock alerts at source location
+        checkLowStockAndCreateAlert(savedSource);
 
         // Increase at final storage location
         Inventory destInventory = inventoryRepository
@@ -423,6 +503,9 @@ public class MovementEventConsumer {
         destInventory.setQuantityOnHand(destInventory.getQuantityOnHand() + quantity);
         Inventory savedDest = inventoryRepository.save(destInventory);
         log.info("✅ Increased destination (storage): {} units now available", savedDest.getQuantityOnHand());
+
+        // Check for low stock alerts at destination location
+        checkLowStockAndCreateAlert(savedDest);
 
         publishInventoryUpdate(savedDest, "PUTAWAY", quantity);
     }
@@ -451,6 +534,9 @@ public class MovementEventConsumer {
         Inventory saved = inventoryRepository.save(inventory);
         log.info("✅ RETURN complete: {} units now at location {}",
                 saved.getQuantityOnHand(), locationId);
+
+        // Check for low stock alerts
+        checkLowStockAndCreateAlert(saved);
 
         publishInventoryUpdate(saved, "RETURN", quantity);
     }
@@ -482,6 +568,9 @@ public class MovementEventConsumer {
         log.info("✅ CYCLE_COUNT complete: {} → {} units (variance: {})",
                 oldQuantity, quantity, quantity - oldQuantity);
 
+        // Check for low stock alerts
+        checkLowStockAndCreateAlert(saved);
+
         publishInventoryUpdate(saved, "CYCLE_COUNT", quantity - oldQuantity);
     }
 
@@ -506,8 +595,11 @@ public class MovementEventConsumer {
                 .orElseThrow(() -> new RuntimeException("Source inventory not found for QUARANTINE"));
 
         sourceInventory.setQuantityOnHand(sourceInventory.getQuantityOnHand() - quantity);
-        inventoryRepository.save(sourceInventory);
-        log.info("✅ Decreased source: {} units remain", sourceInventory.getQuantityOnHand());
+        Inventory savedSource = inventoryRepository.save(sourceInventory);
+        log.info("✅ Decreased source: {} units remain", savedSource.getQuantityOnHand());
+
+        // Check for low stock alerts at source location
+        checkLowStockAndCreateAlert(savedSource);
 
         // Increase at quarantine location and mark as damaged
         Inventory destInventory = inventoryRepository
@@ -519,6 +611,9 @@ public class MovementEventConsumer {
         destInventory.setStatus(InventoryStatus.DAMAGED); // Set status to damaged
         Inventory savedDest = inventoryRepository.save(destInventory);
         log.info("✅ Moved to quarantine: {} units quarantined", savedDest.getQuantityDamaged());
+
+        // Check for low stock alerts at destination location
+        checkLowStockAndCreateAlert(savedDest);
 
         publishInventoryUpdate(savedDest, "QUARANTINE", quantity);
     }
@@ -544,8 +639,11 @@ public class MovementEventConsumer {
                 .orElseThrow(() -> new RuntimeException("Source inventory not found for RELOCATION"));
 
         sourceInventory.setQuantityOnHand(sourceInventory.getQuantityOnHand() - quantity);
-        inventoryRepository.save(sourceInventory);
-        log.info("✅ Decreased old location: {} units remain", sourceInventory.getQuantityOnHand());
+        Inventory savedSource = inventoryRepository.save(sourceInventory);
+        log.info("✅ Decreased old location: {} units remain", savedSource.getQuantityOnHand());
+
+        // Check for low stock alerts at source location
+        checkLowStockAndCreateAlert(savedSource);
 
         // Increase at new location
         Inventory destInventory = inventoryRepository
@@ -555,6 +653,9 @@ public class MovementEventConsumer {
         destInventory.setQuantityOnHand(destInventory.getQuantityOnHand() + quantity);
         Inventory savedDest = inventoryRepository.save(destInventory);
         log.info("✅ Increased new location: {} units now available", savedDest.getQuantityOnHand());
+
+        // Check for low stock alerts at destination location
+        checkLowStockAndCreateAlert(savedDest);
 
         publishInventoryUpdate(savedDest, "RELOCATION", quantity);
     }

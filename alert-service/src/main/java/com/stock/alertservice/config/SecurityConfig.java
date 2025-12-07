@@ -27,7 +27,10 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/actuator/health/**",
-            "/actuator/info/**"
+            "/actuator/info/**",
+            "/actuator/prometheus/**",
+            "/api/alerts",  // Allow service-to-service alert creation
+            "/api/alerts/**"  // Allow reading alerts (for now, can restrict later)
     };
 
     /**
