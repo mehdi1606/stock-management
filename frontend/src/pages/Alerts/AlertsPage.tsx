@@ -16,6 +16,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { alertService, Alert as AlertType } from '@/services/alert.service';
+import { productService } from '@/services/product.service';
+import { locationService } from '@/services/location.service';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -41,9 +43,33 @@ export const AlertsPage: React.FC = () => {
   const [selectedAlert, setSelectedAlert] = useState<AlertType | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
+  // Cache for item and location names
+  const [itemNames, setItemNames] = useState<Record<string, string>>({});
+  const [locationNames, setLocationNames] = useState<Record<string, string>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [, setTick] = useState(0); // Force re-render for time updates
+
   useEffect(() => {
     fetchAlerts();
   }, [pagination.page, filterType, filterLevel, filterStatus]);
+
+  // Auto-refresh alerts every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchAlerts();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [pagination.page, filterType, filterLevel, filterStatus]);
+
+  // Update the "last updated" display every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((prev) => prev + 1);
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, []);
 
   // ============================================================================
   // FETCH ALERTS
@@ -76,12 +102,70 @@ export const AlertsPage: React.FC = () => {
         totalElements: response.totalElements,
         totalPages: response.totalPages,
       });
+
+      // Fetch item and location names for all alerts
+      await fetchEntityNames(response.content);
+
+      // Update last refreshed timestamp
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to fetch alerts:', error);
       toast.error('Failed to load alerts');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch item and location names for alerts
+  const fetchEntityNames = async (alertsList: AlertType[]) => {
+    const itemIds = new Set<string>();
+    const locationIds = new Set<string>();
+
+    // Collect all unique item and location IDs
+    alertsList.forEach((alert) => {
+      if (alert.entityType === 'ITEM' && alert.entityId) {
+        itemIds.add(alert.entityId);
+      }
+
+      // Also check in parsed data for locationId
+      const parsedData = parseAlertData(alert.data);
+      if (parsedData?.itemId) {
+        itemIds.add(parsedData.itemId);
+      }
+      if (parsedData?.locationId) {
+        locationIds.add(parsedData.locationId);
+      }
+    });
+
+    // Fetch item names
+    const newItemNames: Record<string, string> = { ...itemNames };
+    for (const itemId of itemIds) {
+      if (!newItemNames[itemId]) {
+        try {
+          const item = await productService.getItemById(itemId);
+          newItemNames[itemId] = item.name || item.code || itemId;
+        } catch (error) {
+          console.error(`Failed to fetch item ${itemId}:`, error);
+          newItemNames[itemId] = itemId.substring(0, 8) + '...';
+        }
+      }
+    }
+    setItemNames(newItemNames);
+
+    // Fetch location names
+    const newLocationNames: Record<string, string> = { ...locationNames };
+    for (const locationId of locationIds) {
+      if (!newLocationNames[locationId]) {
+        try {
+          const location = await locationService.getLocationById(locationId);
+          newLocationNames[locationId] = location.name || location.code || locationId;
+        } catch (error) {
+          console.error(`Failed to fetch location ${locationId}:`, error);
+          newLocationNames[locationId] = locationId.substring(0, 8) + '...';
+        }
+      }
+    }
+    setLocationNames(newLocationNames);
   };
 
   // ============================================================================
@@ -128,9 +212,67 @@ export const AlertsPage: React.FC = () => {
   // HELPER FUNCTIONS
   // ============================================================================
 
+  // Decode URL-encoded strings
+  const decodeMessage = (message: string): string => {
+    try {
+      return decodeURIComponent(message);
+    } catch (e) {
+      return message; // Return original if decoding fails
+    }
+  };
+
+  // Parse and decode alert data
+  const parseAlertData = (data: any): any => {
+    if (!data) return null;
+
+    try {
+      // If data has rawData property, try to decode and parse it
+      if (data.rawData) {
+        const decodedRawData = decodeURIComponent(data.rawData);
+        try {
+          return JSON.parse(decodedRawData);
+        } catch (e) {
+          // If parsing fails, return the decoded string
+          return { rawData: decodedRawData };
+        }
+      }
+      return data;
+    } catch (e) {
+      return data; // Return original if decoding fails
+    }
+  };
+
+  // Get display name for item (from cache or fallback to ID)
+  const getItemDisplayName = (itemId: string): string => {
+    return itemNames[itemId] || itemId;
+  };
+
+  // Get display name for location (from cache or fallback to ID)
+  const getLocationDisplayName = (locationId: string): string => {
+    return locationNames[locationId] || locationId;
+  };
+
+  // Get enhanced message with names instead of IDs
+  const getEnhancedMessage = (alert: AlertType): string => {
+    let message = decodeMessage(alert.message);
+    const parsedData = parseAlertData(alert.data);
+
+    // Replace item ID with item name if available
+    if (parsedData?.itemId && itemNames[parsedData.itemId]) {
+      message = message.replace(parsedData.itemId, `"${itemNames[parsedData.itemId]}"`);
+    }
+
+    // Replace location ID with location name if available
+    if (parsedData?.locationId && locationNames[parsedData.locationId]) {
+      message = message.replace(parsedData.locationId, `"${locationNames[parsedData.locationId]}"`);
+    }
+
+    return message;
+  };
+
   const getLevelIcon = (level: string) => {
     switch (level) {
-      case 'CRITICAL':
+      case 'EMERGENCY':
         return <AlertOctagon className="w-5 h-5" />;
       case 'WARNING':
         return <AlertTriangle className="w-5 h-5" />;
@@ -143,8 +285,8 @@ export const AlertsPage: React.FC = () => {
 
   const getLevelColor = (level: string) => {
     switch (level) {
-      case 'CRITICAL':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'EMERGENCY':
+        return 'bg-red-600 text-white dark:bg-red-700 dark:text-white'; // Bright red for EMERGENCY
       case 'WARNING':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
       case 'INFO':
@@ -201,9 +343,22 @@ export const AlertsPage: React.FC = () => {
     }).format(date);
   };
 
+  const formatLastUpdated = () => {
+    if (!lastUpdated) return 'Never';
+    const now = new Date();
+    const diffMs = now.getTime() - lastUpdated.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+
+    if (diffSecs < 5) return 'Just now';
+    if (diffSecs < 60) return `${diffSecs}s ago`;
+    const diffMins = Math.floor(diffSecs / 60);
+    if (diffMins < 60) return `${diffMins}m ago`;
+    return lastUpdated.toLocaleTimeString();
+  };
+
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch = searchTerm
-      ? alert.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ? decodeMessage(alert.message).toLowerCase().includes(searchTerm.toLowerCase()) ||
         alert.type.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
     return matchesSearch;
@@ -221,6 +376,11 @@ export const AlertsPage: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Alerts</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Monitor and manage system alerts
+            {lastUpdated && (
+              <span className="ml-2 text-xs">
+                • Auto-refreshes every 30s • Last updated: {formatLastUpdated()}
+              </span>
+            )}
           </p>
         </div>
 
@@ -259,6 +419,7 @@ export const AlertsPage: React.FC = () => {
           <Select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
+            className="text-sm font-medium"
           >
             <option value="">All Types</option>
             <option value="LOW_STOCK">Low Stock</option>
@@ -274,17 +435,19 @@ export const AlertsPage: React.FC = () => {
           <Select
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value)}
+            className="text-sm font-medium"
           >
             <option value="">All Levels</option>
             <option value="INFO">Info</option>
             <option value="WARNING">Warning</option>
-            <option value="CRITICAL">Critical</option>
+            <option value="EMERGENCY">Emergency</option>
           </Select>
 
           {/* Status Filter */}
           <Select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
+            className="text-sm font-medium"
           >
             <option value="">All Statuses</option>
             <option value="ACTIVE">Active</option>
@@ -375,13 +538,16 @@ export const AlertsPage: React.FC = () => {
                     </div>
 
                     <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                      {alert.message}
+                      {getEnhancedMessage(alert)}
                     </p>
 
                     {alert.entityType && (
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                        Entity: {alert.entityType}
-                        {alert.entityId && ` (ID: ${alert.entityId.substring(0, 8)}...)`}
+                        {alert.entityType === 'ITEM' ? (
+                          <>Item: <span className="font-semibold">{getItemDisplayName(alert.entityId)}</span></>
+                        ) : (
+                          <>Entity: {alert.entityType} ({alert.entityId?.substring(0, 8)}...)</>
+                        )}
                       </p>
                     )}
 
@@ -408,7 +574,7 @@ export const AlertsPage: React.FC = () => {
                           <Check className="w-3 h-3 mr-1" />
                           Resolve
                         </Button>
-                        {alert.level === 'CRITICAL' && alert.status === 'ACTIVE' && (
+                        {alert.level === 'EMERGENCY' && alert.status === 'ACTIVE' && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -508,7 +674,7 @@ export const AlertsPage: React.FC = () => {
                       Message
                     </h3>
                     <p className="text-gray-900 dark:text-white">
-                      {selectedAlert.message}
+                      {getEnhancedMessage(selectedAlert)}
                     </p>
                   </div>
 
@@ -527,9 +693,14 @@ export const AlertsPage: React.FC = () => {
                         </div>
                         {selectedAlert.entityId && (
                           <div className="flex justify-between">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">ID:</span>
-                            <span className="text-sm font-mono text-gray-900 dark:text-white">
-                              {selectedAlert.entityId}
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {selectedAlert.entityType === 'ITEM' ? 'Item Name:' : 'ID:'}
+                            </span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {selectedAlert.entityType === 'ITEM'
+                                ? getItemDisplayName(selectedAlert.entityId)
+                                : selectedAlert.entityId
+                              }
                             </span>
                           </div>
                         )}
@@ -538,18 +709,58 @@ export const AlertsPage: React.FC = () => {
                   )}
 
                   {/* Additional Data */}
-                  {selectedAlert.data && Object.keys(selectedAlert.data).length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        Additional Data
-                      </h3>
-                      <div className="bg-neutral-50 dark:bg-neutral-700/50 rounded-lg p-4">
-                        <pre className="text-xs text-gray-900 dark:text-white overflow-x-auto">
-                          {JSON.stringify(selectedAlert.data, null, 2)}
-                        </pre>
+                  {selectedAlert.data && Object.keys(selectedAlert.data).length > 0 && (() => {
+                    const parsedData = parseAlertData(selectedAlert.data);
+                    return parsedData && Object.keys(parsedData).length > 0 ? (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          Additional Data
+                        </h3>
+                        <div className="bg-neutral-50 dark:bg-neutral-700/50 rounded-lg p-4 space-y-2">
+                          {parsedData.itemId && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Item:</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                {getItemDisplayName(parsedData.itemId)}
+                              </span>
+                            </div>
+                          )}
+                          {parsedData.locationId && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Location:</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                {getLocationDisplayName(parsedData.locationId)}
+                              </span>
+                            </div>
+                          )}
+                          {parsedData.currentQuantity !== undefined && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Current Quantity:</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                {parsedData.currentQuantity}
+                              </span>
+                            </div>
+                          )}
+                          {parsedData.threshold !== undefined && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Threshold:</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                {parsedData.threshold}
+                              </span>
+                            </div>
+                          )}
+                          {parsedData.alertReason && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Reason:</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                {parsedData.alertReason}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ) : null;
+                  })()}
 
                   {/* Timestamps */}
                   <div>
@@ -609,7 +820,7 @@ export const AlertsPage: React.FC = () => {
                         <Check className="w-4 h-4 mr-2" />
                         Resolve
                       </Button>
-                      {selectedAlert.level === 'CRITICAL' && selectedAlert.status === 'ACTIVE' && (
+                      {selectedAlert.level === 'EMERGENCY' && selectedAlert.status === 'ACTIVE' && (
                         <Button
                           onClick={(e) => {
                             handleEscalate(selectedAlert.id, e);

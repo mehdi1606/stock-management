@@ -7,7 +7,10 @@
       "Bash(docker-compose restart:*)",
       "Bash(docker-compose:*)",
       "Bash(curl:*)",
-      "Bash(python -m json.tool:*)"
+      "Bash(python -m json.tool:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx vite build)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

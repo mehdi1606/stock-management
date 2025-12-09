@@ -10,7 +10,7 @@ import type { PaginatedResponse, PaginationParams, ApiResponse } from '@/types';
 export interface Alert {
   id: string;
   type: 'LOW_STOCK' | 'OVERSTOCK' | 'EXPIRY' | 'QUALITY' | 'LOCATION' | 'MOVEMENT' | 'SYSTEM';
-  level: 'INFO' | 'WARNING' | 'CRITICAL';
+  level: 'INFO' | 'WARNING' | 'EMERGENCY';
   status: 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED' | 'ESCALATED';
   message: string;
   entityType?: string;
@@ -190,17 +190,19 @@ export const alertService = {
   /**
    * Acknowledge alert
    */
-  acknowledgeAlert: async (id: string): Promise<Alert> => {
-    const response = await apiClient.post<Alert>(`${API_ENDPOINTS.ALERTS.ALERT_BY_ID(id)}/acknowledge`);
+  acknowledgeAlert: async (id: string, comment?: string): Promise<Alert> => {
+    const response = await apiClient.patch<Alert>(`${API_ENDPOINTS.ALERTS.ALERT_BY_ID(id)}/acknowledge`, {
+      comment: comment || 'Acknowledged by user'
+    });
     return response.data;
   },
 
   /**
    * Resolve alert
    */
-  resolveAlert: async (id: string, resolutionNote?: string): Promise<Alert> => {
-    const response = await apiClient.post<Alert>(`${API_ENDPOINTS.ALERTS.ALERT_BY_ID(id)}/resolve`, {
-      resolutionNote
+  resolveAlert: async (id: string, resolutionComment?: string): Promise<Alert> => {
+    const response = await apiClient.patch<Alert>(`${API_ENDPOINTS.ALERTS.ALERT_BY_ID(id)}/resolve`, {
+      resolutionComment: resolutionComment || 'Resolved by user'
     });
     return response.data;
   },
@@ -209,7 +211,7 @@ export const alertService = {
    * Escalate alert
    */
   escalateAlert: async (id: string): Promise<Alert> => {
-    const response = await apiClient.post<Alert>(`${API_ENDPOINTS.ALERTS.ALERT_BY_ID(id)}/escalate`);
+    const response = await apiClient.patch<Alert>(`${API_ENDPOINTS.ALERTS.ALERT_BY_ID(id)}/escalate`);
     return response.data;
   },
 

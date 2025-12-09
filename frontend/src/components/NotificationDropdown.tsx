@@ -12,6 +12,8 @@ import {
   Eye,
 } from 'lucide-react';
 import { alertService, Alert } from '@/services/alert.service';
+import { productService } from '@/services/product.service';
+import { locationService } from '@/services/location.service';
 import { toast } from 'react-hot-toast';
 
 interface NotificationDropdownProps {
@@ -27,6 +29,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [itemNames, setItemNames] = useState<Record<string, string>>({});
+  const [locationNames, setLocationNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -50,6 +54,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       const response = await alertService.getUnacknowledgedAlerts({ page: 0, size: 5 });
       setAlerts(response.content);
       setUnreadCount(response.totalElements);
+      // Fetch item and location names for all alerts
+      await fetchEntityNames(response.content);
     } catch (error) {
       console.error('Failed to fetch alerts:', error);
     } finally {
@@ -102,9 +108,109 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     onClose();
   };
 
+  // Fetch item and location names for alerts
+  const fetchEntityNames = async (alertsList: Alert[]) => {
+    const itemIds = new Set<string>();
+    const locationIds = new Set<string>();
+
+    // Collect all unique item and location IDs
+    alertsList.forEach((alert) => {
+      if (alert.entityType === 'ITEM' && alert.entityId) {
+        itemIds.add(alert.entityId);
+      }
+
+      // Also check in parsed data for locationId
+      const parsedData = parseAlertData(alert.data);
+      if (parsedData?.itemId) {
+        itemIds.add(parsedData.itemId);
+      }
+      if (parsedData?.locationId) {
+        locationIds.add(parsedData.locationId);
+      }
+    });
+
+    // Fetch item names
+    const newItemNames: Record<string, string> = { ...itemNames };
+    for (const itemId of itemIds) {
+      if (!newItemNames[itemId]) {
+        try {
+          const item = await productService.getItemById(itemId);
+          newItemNames[itemId] = item.name || item.code || itemId;
+        } catch (error) {
+          console.error(`Failed to fetch item ${itemId}:`, error);
+          newItemNames[itemId] = itemId.substring(0, 8) + '...';
+        }
+      }
+    }
+    setItemNames(newItemNames);
+
+    // Fetch location names
+    const newLocationNames: Record<string, string> = { ...locationNames };
+    for (const locationId of locationIds) {
+      if (!newLocationNames[locationId]) {
+        try {
+          const location = await locationService.getLocationById(locationId);
+          newLocationNames[locationId] = location.name || location.code || locationId;
+        } catch (error) {
+          console.error(`Failed to fetch location ${locationId}:`, error);
+          newLocationNames[locationId] = locationId.substring(0, 8) + '...';
+        }
+      }
+    }
+    setLocationNames(newLocationNames);
+  };
+
+  // Decode URL-encoded message
+  const decodeMessage = (message: string): string => {
+    try {
+      return decodeURIComponent(message);
+    } catch (e) {
+      return message; // Return original if decoding fails
+    }
+  };
+
+  // Parse and decode alert data
+  const parseAlertData = (data: any): any => {
+    if (!data) return null;
+
+    try {
+      // If data has rawData property, try to decode and parse it
+      if (data.rawData) {
+        const decodedRawData = decodeURIComponent(data.rawData);
+        try {
+          return JSON.parse(decodedRawData);
+        } catch (e) {
+          // If parsing fails, return the decoded string
+          return { rawData: decodedRawData };
+        }
+      }
+      return data;
+    } catch (e) {
+      return data; // Return original if decoding fails
+    }
+  };
+
+  // Get enhanced message with names instead of IDs
+  const getEnhancedMessage = (alert: Alert): string => {
+    let message = decodeMessage(alert.message);
+    const parsedData = parseAlertData(alert.data);
+
+    // Replace item ID with item name if available
+    if (parsedData?.itemId && itemNames[parsedData.itemId]) {
+      message = message.replace(parsedData.itemId, `"${itemNames[parsedData.itemId]}"`);
+    }
+
+    // Replace location ID with location name if available
+    if (parsedData?.locationId && locationNames[parsedData.locationId]) {
+      message = message.replace(parsedData.locationId, `"${locationNames[parsedData.locationId]}"`);
+    }
+
+    return message;
+  };
+
   const getLevelIcon = (level: string) => {
     switch (level) {
-      case 'CRITICAL':
+      case 'EMERGENCY':
         return <AlertOctagon className="w-4 h-4" />;
       case 'WARNING':
         return <AlertTriangle className="w-4 h-4" />;
@@ -117,7 +223,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
   const getLevelColor = (level: string) => {
     switch (level) {
-      case 'CRITICAL':
+      case 'EMERGENCY':
         return 'text-red-500';
       case 'WARNING':
         return 'text-orange-500';
@@ -205,7 +311,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 line-clamp-2">
-                          {alert.message}
+                          {getEnhancedMessage(alert)}
                         </p>
                         <button
                           onClick={(e) => handleAcknowledge(alert.id, e)}
@@ -221,8 +327,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                           {alert.type.replace('_', ' ')}
                         </span>
                         <span className={`text-xs px-2 py-0.5 rounded ${
-                          alert.level === 'CRITICAL'
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                          alert.level === 'EMERGENCY'
+                            ? 'bg-red-600 text-white dark:bg-red-700 dark:text-white'
                             : alert.level === 'WARNING'
                             ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
                             : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
