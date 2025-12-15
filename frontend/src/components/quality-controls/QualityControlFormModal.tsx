@@ -1,12 +1,3 @@
-// ✅ COMPLETE QUALITY CONTROL FORM MODAL - PRODUCTION READY
-// Features:
-// - Auto-populated inspectorId from localStorage
-// - Dynamic Location Dropdown from API
-// - Dynamic Item & Lot Selection
-// - Inspection Results Management
-// - File Attachments Support
-// - Full CRUD Operations
-
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Upload, User, MapPin } from 'lucide-react';
 import { qualityService } from '@/services/quality.service';
@@ -62,7 +53,7 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
     itemId: '',
     lotId: '',
     serialNumber: '',
-    quantityInspected: 0,
+    quantityInspected: 1, // ✅ Default to 1 (backend requires @Positive)
     inspectionType: 'INCOMING',
     status: 'PENDING',
     inspectorId: '',
@@ -81,28 +72,61 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
   // EFFECTS - Data Loading
   // ============================================================================
 
-  // ✅ Load inspector ID from localStorage on mount
+  // ✅ Load inspector ID from JWT token or localStorage
   useEffect(() => {
     const loadInspectorId = () => {
       try {
-        const authData = localStorage.getItem('auth');
-        if (authData) {
-          const parsedAuth = JSON.parse(authData);
-          const inspectorId = parsedAuth.userId || parsedAuth.id || parsedAuth.user?.id || '';
-          setCurrentInspectorId(inspectorId);
-          
-          // Auto-populate inspectorId in form
-          setFormData(prev => ({
-            ...prev,
-            inspectorId: inspectorId
-          }));
-          
-          console.log('✅ Inspector ID loaded from localStorage:', inspectorId);
-        } else {
-          console.warn('⚠️ No auth data found in localStorage');
+        // Method 1: Decode JWT token to get user ID
+        const accessToken = localStorage.getItem('access_token');
+        if (accessToken) {
+          try {
+            // Decode JWT (simple base64 decode of payload)
+            const payload = JSON.parse(atob(accessToken.split('.')[1]));
+            console.log('🔍 JWT Payload:', payload);
+
+            // Extract user ID from JWT token
+            const inspectorId = payload.sub || payload.userId || payload.id || payload.user_id || '';
+
+            if (inspectorId) {
+              setCurrentInspectorId(inspectorId);
+              setFormData(prev => ({
+                ...prev,
+                inspectorId: inspectorId
+              }));
+              console.log('✅ Inspector ID from JWT:', inspectorId);
+              return; // Success!
+            }
+          } catch (jwtError) {
+            console.warn('⚠️ Could not decode JWT:', jwtError);
+          }
         }
+
+        // Method 2: Try user object from localStorage
+        const userJson = localStorage.getItem('user');
+        if (userJson) {
+          const user = JSON.parse(userJson);
+          console.log('🔍 User object:', user);
+
+          const inspectorId = user.id || user.userId || user.sub || '';
+
+          if (inspectorId) {
+            setCurrentInspectorId(inspectorId);
+            setFormData(prev => ({
+              ...prev,
+              inspectorId: inspectorId
+            }));
+            console.log('✅ Inspector ID from user object:', inspectorId);
+            return; // Success!
+          }
+        }
+
+        // If we got here, couldn't find inspector ID
+        console.error('❌ Could not find inspector ID');
+        toast.error('Please enter your Inspector ID manually');
+
       } catch (error) {
-        console.error('❌ Failed to parse auth data:', error);
+        console.error('❌ Failed to load inspector ID:', error);
+        toast.error('Please enter your Inspector ID manually');
       }
     };
 
@@ -202,7 +226,7 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
       itemId: '',
       lotId: '',
       serialNumber: '',
-      quantityInspected: 0,
+      quantityInspected: 1, // ✅ Default to 1 (backend requires @Positive)
       inspectionType: 'INCOMING',
       status: 'PENDING',
       inspectorId: currentInspectorId, // ✅ Keep inspector ID
@@ -284,33 +308,68 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
     setLoading(true);
 
     try {
-      const submitData = {
-        ...formData,
-        inspectionResults: inspectionResults
+      // ✅ FIX: Only send fields that backend expects for creation
+      const submitData: any = {
+        itemId: formData.itemId,
+        lotId: formData.lotId || undefined,
+        serialNumber: formData.serialNumber || undefined,
+        quantityInspected: formData.quantityInspected,
+        inspectionType: formData.inspectionType,
+        qualityProfileId: formData.qualityProfileId || undefined,
+        samplingPlanId: formData.samplingPlanId || undefined,
+        inspectorId: formData.inspectorId,
+        inspectionLocationId: formData.inspectionLocationId || undefined,
+        scheduledDate: formData.scheduledDate || undefined,
+        quarantineId: formData.quarantineId || undefined,
       };
+
+      // Remove undefined fields and empty strings
+      Object.keys(submitData).forEach(key => {
+        if (submitData[key] === undefined || submitData[key] === '') {
+          delete submitData[key];
+        }
+      });
+
+      // ✅ CRITICAL: Validate inspectorId before submission
+      if (!submitData.inspectorId || submitData.inspectorId.trim() === '') {
+        toast.error('Inspector ID is required. Please log in again.');
+        console.error('❌ Inspector ID is missing!');
+        setLoading(false);
+        return;
+      }
 
       console.log('📤 Submitting Quality Control:', submitData);
 
       let response;
       if (qualityControl) {
-        // Update existing
-        response = await qualityService.updateQualityControl(qualityControl.id, submitData);
+        // Update existing - include additional fields
+        const updateData = {
+          ...submitData,
+          status: formData.status,
+          defectCount: formData.defectCount,
+          inspectorNotes: formData.inspectorNotes,
+          correctiveAction: formData.correctiveAction,
+          inspectionResults: inspectionResults
+        };
+        response = await qualityService.updateQualityControl(qualityControl.id, updateData);
         toast.success('Quality control updated successfully');
       } else {
-        // Create new
+        // Create new - only required fields
         response = await qualityService.createQualityControl(submitData);
+        console.log('✅ Quality control created:', response);
         toast.success('Quality control created successfully');
       }
 
       // Upload attachments if any
       if (attachments.length > 0 && response && typeof response === 'object' && 'id' in response) {
         console.log('📎 Uploading attachments...');
+        const qualityControlId = (response as any).id as string;
         for (const file of attachments) {
           await qualityService.uploadAttachment(
             file,
-            response.id,
+            qualityControlId,
             undefined,
-            `Inspection attachment for ${response.id}`,
+            `Inspection attachment for ${qualityControlId}`,
             'DOCUMENT'
           );
         }
@@ -362,16 +421,48 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
           {/* ============================================================== */}
           {/* INSPECTOR ID INFO BOX (AUTO-FILLED) */}
           {/* ============================================================== */}
-          {currentInspectorId && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <User className="text-blue-600 dark:text-blue-400" size={20} />
-                <div>
-                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    Inspector ID (Auto-filled from login session)
+          {/* ============================================================== */}
+          {/* INSPECTOR ID - AUTO FROM AUTHENTICATION */}
+          {/* ============================================================== */}
+          {currentInspectorId ? (
+            <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <User className="text-green-600 dark:text-green-400 mt-1" size={20} />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">
+                    Inspector ID <span className="text-green-600">(Auto-detected from authentication)</span>
                   </p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 font-mono">
-                    {currentInspectorId}
+                  <div className="flex items-center gap-2">
+                    <code className="px-3 py-2 bg-white dark:bg-gray-800 rounded border border-green-300 dark:border-green-700 font-mono text-sm flex-1">
+                      {currentInspectorId}
+                    </code>
+                    <span className="text-green-600 dark:text-green-400 text-xl">✓</span>
+                  </div>
+                  <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+                    ✅ Automatically loaded from your login session
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <User className="text-yellow-600 dark:text-yellow-400 mt-1" size={20} />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+                    Inspector ID <span className="text-red-500">*REQUIRED*</span>
+                  </p>
+                  <Input
+                    type="text"
+                    name="inspectorId"
+                    value={formData.inspectorId || ''}
+                    onChange={handleChange}
+                    required
+                    placeholder="Enter your Inspector ID"
+                    className="font-mono"
+                  />
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    ⚠️ Could not auto-load from authentication. Please enter manually.
                   </p>
                 </div>
               </div>
@@ -489,8 +580,6 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
                   <option value="RANDOM_AUDIT">Random Audit</option>
                   <option value="CUSTOMER_RETURN">Customer Return</option>
                   <option value="PROCESS_INSPECTION">Process Inspection</option>
-                  <option value="OUTGOING">Outgoing Inspection</option>
-                  <option value="PERIODIC">Periodic Inspection</option>
                 </Select>
               </div>
 
@@ -517,17 +606,16 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <MapPin size={16} />
-                  Inspection Location <span className="text-red-500">*</span>
+                  Inspection Location
                 </label>
                 <Select
                   name="inspectionLocationId"
                   value={formData.inspectionLocationId || ''}
                   onChange={handleChange}
-                  required
                   disabled={loadingLocations}
                 >
                   <option value="">
-                    {loadingLocations ? 'Loading locations...' : 'Select a location'}
+                    {loadingLocations ? 'Loading locations...' : 'Select a location (optional)'}
                   </option>
                   {locations.map((location) => (
                     <option key={location.id} value={location.id}>

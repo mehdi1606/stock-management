@@ -10,7 +10,9 @@
       "Bash(python -m json.tool:*)",
       "Bash(npm run build:*)",
       "Bash(npx vite build)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(netstat:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

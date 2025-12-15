@@ -488,7 +488,7 @@ export const QualityControlsPage = () => {
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
           qualityControl={selectedQC}
-          onSuccess={fetchQualityControls}
+          onUpdate={fetchQualityControls}
         />
       )}
 
