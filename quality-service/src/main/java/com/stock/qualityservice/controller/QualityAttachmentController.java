@@ -32,8 +32,8 @@ public class QualityAttachmentController {
     @Operation(summary = "Upload attachment", description = "Upload a file attachment for quality control or quarantine")
     public ResponseEntity<QualityAttachmentResponse> uploadAttachment(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(required = false) Long qualityControlId,
-            @RequestParam(required = false) Long quarantineId,
+            @RequestParam(required = false) String qualityControlId,
+            @RequestParam(required = false) String quarantineId,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String attachmentType) {
         log.info("Uploading attachment: {}", file.getOriginalFilename());
@@ -51,7 +51,7 @@ public class QualityAttachmentController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get attachment by ID")
-    public ResponseEntity<QualityAttachmentResponse> getAttachmentById(@PathVariable Long id) {
+    public ResponseEntity<QualityAttachmentResponse> getAttachmentById(@PathVariable String id) {
         log.info("Fetching attachment with ID: {}", id);
         QualityAttachmentResponse response = attachmentService.getAttachmentById(String.valueOf(id));
         return ResponseEntity.ok(response);
@@ -61,7 +61,7 @@ public class QualityAttachmentController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get attachments by quality control ID")
     public ResponseEntity<List<QualityAttachmentResponse>> getAttachmentsByQualityControlId(
-            @PathVariable Long qualityControlId) {
+            @PathVariable String qualityControlId) {
         log.info("Fetching attachments for quality control: {}", qualityControlId);
         List<QualityAttachmentResponse> response = attachmentService.getAttachmentsByQualityControlId(String.valueOf(qualityControlId));
         return ResponseEntity.ok(response);
@@ -71,7 +71,7 @@ public class QualityAttachmentController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get attachments by quarantine ID")
     public ResponseEntity<List<QualityAttachmentResponse>> getAttachmentsByQuarantineId(
-            @PathVariable Long quarantineId) {
+            @PathVariable String quarantineId) {
         log.info("Fetching attachments for quarantine: {}", quarantineId);
         List<QualityAttachmentResponse> response = attachmentService.getAttachmentsByQuarantineId(String.valueOf(quarantineId));
         return ResponseEntity.ok(response);
@@ -90,7 +90,7 @@ public class QualityAttachmentController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'ADMIN')")
     @Operation(summary = "Delete attachment")
-    public ResponseEntity<Void> deleteAttachment(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteAttachment(@PathVariable String id) {
         log.info("Deleting attachment with ID: {}", id);
         attachmentService.deleteAttachment(String.valueOf(id));
         return ResponseEntity.noContent().build();

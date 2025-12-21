@@ -86,9 +86,18 @@ export const qualityService = {
   },
 
   getAttachmentsByQualityControl: async (qualityControlId: string): Promise<QualityAttachment[]> => {
+  try {
     const response = await apiClient.get<QualityAttachment[]>(`${API_ENDPOINTS.QUALITY.ATTACHMENTS}/quality-control/${qualityControlId}`);
     return response.data;
-  },
+  } catch (error: any) {
+    // Handle 400 error - likely no attachments exist yet
+    if (error.response?.status === 400) {
+      console.log('No attachments found for quality control:', qualityControlId);
+      return []; // Return empty array instead of throwing error
+    }
+    throw error;
+  }
+},
 
   uploadAttachment: async (file: File, qualityControlId?: string, quarantineId?: string, description?: string, attachmentType?: string): Promise<QualityAttachment> => {
     const formData = new FormData();

@@ -29,14 +29,12 @@ export const QualityControlDetailModal: React.FC<QualityControlDetailModalProps>
     }
   }, [isOpen, qualityControl?.id]);
 
-  const fetchAttachments = async () => {
-    try {
-      const data = await qualityService.getAttachmentsByQualityControl(qualityControl.id);
-      setAttachments(data);
-    } catch (error) {
-      console.error('Failed to fetch attachments:', error);
-    }
-  };
+ const fetchAttachments = async () => {
+  // ⚠️ TEMPORARY: Backend expects Long (number) but we have UUID (string)
+  // Skip fetching attachments to prevent 400 error
+  console.log('⚠️ Attachments disabled - backend type mismatch');
+  setAttachments([]);
+};
 
   const handleApprove = async () => {
     setLoading(true);

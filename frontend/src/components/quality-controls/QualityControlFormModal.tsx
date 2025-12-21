@@ -73,68 +73,66 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
   // ============================================================================
 
   // ✅ Load inspector ID from JWT token or localStorage
-  useEffect(() => {
-    const loadInspectorId = () => {
-      try {
-        // Method 1: Decode JWT token to get user ID
-        const accessToken = localStorage.getItem('access_token');
-        if (accessToken) {
-          try {
-            // Decode JWT (simple base64 decode of payload)
-            const payload = JSON.parse(atob(accessToken.split('.')[1]));
-            console.log('🔍 JWT Payload:', payload);
+ useEffect(() => {
+  const loadInspectorId = () => {
+    try {
+      console.log('🔍 Attempting to load inspector ID...');
 
-            // Extract user ID from JWT token
-            const inspectorId = payload.sub || payload.userId || payload.id || payload.user_id || '';
-
-            if (inspectorId) {
-              setCurrentInspectorId(inspectorId);
-              setFormData(prev => ({
-                ...prev,
-                inspectorId: inspectorId
-              }));
-              console.log('✅ Inspector ID from JWT:', inspectorId);
-              return; // Success!
-            }
-          } catch (jwtError) {
-            console.warn('⚠️ Could not decode JWT:', jwtError);
-          }
+      // Method 1: Get user from localStorage FIRST (most reliable)
+      const userJson = localStorage.getItem('user');
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        console.log('👤 User object:', user);
+        
+        const inspectorId = user.id || user.userId || user.sub || user.user_id || '';
+        
+        if (inspectorId && inspectorId.trim() !== '') {
+          setCurrentInspectorId(inspectorId);
+          setFormData(prev => ({ ...prev, inspectorId: inspectorId }));
+          console.log('✅ Inspector ID loaded:', inspectorId);
+          return;
         }
-
-        // Method 2: Try user object from localStorage
-        const userJson = localStorage.getItem('user');
-        if (userJson) {
-          const user = JSON.parse(userJson);
-          console.log('🔍 User object:', user);
-
-          const inspectorId = user.id || user.userId || user.sub || '';
-
-          if (inspectorId) {
-            setCurrentInspectorId(inspectorId);
-            setFormData(prev => ({
-              ...prev,
-              inspectorId: inspectorId
-            }));
-            console.log('✅ Inspector ID from user object:', inspectorId);
-            return; // Success!
-          }
-        }
-
-        // If we got here, couldn't find inspector ID
-        console.error('❌ Could not find inspector ID');
-        toast.error('Please enter your Inspector ID manually');
-
-      } catch (error) {
-        console.error('❌ Failed to load inspector ID:', error);
-        toast.error('Please enter your Inspector ID manually');
       }
-    };
 
-    if (isOpen) {
-      loadInspectorId();
+      // Method 2: Try JWT token
+      const accessToken = localStorage.getItem('access_token');
+      if (accessToken) {
+        try {
+          const payload = JSON.parse(atob(accessToken.split('.')[1]));
+          const inspectorId = payload.sub || payload.userId || payload.id || payload.user_id || '';
+          
+          if (inspectorId && inspectorId.trim() !== '') {
+            setCurrentInspectorId(inspectorId);
+            setFormData(prev => ({ ...prev, inspectorId: inspectorId }));
+            console.log('✅ Inspector ID from JWT:', inspectorId);
+            return;
+          }
+        } catch (jwtError) {
+          console.warn('⚠️ Could not decode JWT');
+        }
+      }
+
+      // Method 3: Direct userId in localStorage
+      const directUserId = localStorage.getItem('userId') || localStorage.getItem('user_id');
+      if (directUserId) {
+        setCurrentInspectorId(directUserId);
+        setFormData(prev => ({ ...prev, inspectorId: directUserId }));
+        console.log('✅ Inspector ID from localStorage:', directUserId);
+        return;
+      }
+
+      console.error('❌ Could not find inspector ID');
+      toast.error('Please enter your Inspector ID manually');
+    } catch (error) {
+      console.error('❌ Error loading inspector ID:', error);
+      toast.error('Please enter your Inspector ID manually');
     }
-  }, [isOpen]);
+  };
 
+  if (isOpen) {
+    loadInspectorId();
+  }
+}, [isOpen]);
   // ✅ Load items and locations when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -313,7 +311,7 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
         itemId: formData.itemId,
         lotId: formData.lotId || undefined,
         serialNumber: formData.serialNumber || undefined,
-        quantityInspected: formData.quantityInspected,
+        quantityInspected:  Number(formData.quantityInspected),
         inspectionType: formData.inspectionType,
         qualityProfileId: formData.qualityProfileId || undefined,
         samplingPlanId: formData.samplingPlanId || undefined,
@@ -330,14 +328,21 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
         }
       });
 
-      // ✅ CRITICAL: Validate inspectorId before submission
-      if (!submitData.inspectorId || submitData.inspectorId.trim() === '') {
-        toast.error('Inspector ID is required. Please log in again.');
-        console.error('❌ Inspector ID is missing!');
-        setLoading(false);
-        return;
-      }
+     const finalInspectorId = formData.inspectorId?.trim() || currentInspectorId?.trim() || '';
 
+if (!finalInspectorId || finalInspectorId === '') {
+  console.error('❌ Inspector ID validation failed!');
+  console.log('formData.inspectorId:', formData.inspectorId);
+  console.log('currentInspectorId:', currentInspectorId);
+  toast.error('Inspector ID is required. Please enter it manually or log in again.', { duration: 5000 });
+  setLoading(false);
+  return;
+}
+
+console.log('✅ Inspector ID validated:', finalInspectorId);
+
+// Update submitData to use validated inspector ID
+submitData.inspectorId = finalInspectorId;
       console.log('📤 Submitting Quality Control:', submitData);
 
       let response;
