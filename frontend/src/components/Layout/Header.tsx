@@ -31,6 +31,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const { user } = useAppSelector((state) => state.auth);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(() => {
     // Initialize from localStorage or system preference
     const saved = localStorage.getItem('theme');
@@ -43,6 +44,16 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
   // Get unread alert count from the custom hook
   const unreadCount = useUnreadAlertCount();
+
+  // Load profile image from localStorage
+  useEffect(() => {
+    if (user?.id) {
+      const savedImage = localStorage.getItem(`profile_image_${user.id}`);
+      if (savedImage) {
+        setProfileImage(savedImage);
+      }
+    }
+  }, [user?.id]);
 
   // Apply dark mode class to document element
   useEffect(() => {
@@ -214,8 +225,12 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                   {user?.email || 'user@example.com'}
                 </span>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                {getUserInitials()}
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-lg overflow-hidden border-0 outline-none">
+                {profileImage ? (
+                  <img src={profileImage} alt="Profile" className="w-full h-full object-cover border-0 outline-none" />
+                ) : (
+                  <span className="border-0 outline-none">{getUserInitials()}</span>
+                )}
               </div>
               <ChevronDown className="w-4 h-4 text-neutral-500 hidden lg:block" />
             </motion.button>
