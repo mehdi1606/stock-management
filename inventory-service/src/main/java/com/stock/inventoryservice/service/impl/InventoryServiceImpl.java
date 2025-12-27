@@ -9,6 +9,7 @@ import com.stock.inventoryservice.dto.request.InventoryAdjustmentRequest;
 import com.stock.inventoryservice.dto.request.InventoryCreateRequest;
 import com.stock.inventoryservice.dto.request.InventoryTransferRequest;
 import com.stock.inventoryservice.dto.request.InventoryUpdateRequest;
+import com.stock.inventoryservice.dto.request.QualityAdjustmentRequest;
 import com.stock.inventoryservice.entity.Inventory;
 import com.stock.inventoryservice.entity.InventoryStatus;
 import com.stock.inventoryservice.event.StockBelowThresholdEvent;
@@ -686,5 +687,112 @@ public class InventoryServiceImpl implements InventoryService {
                 .updatedAt(inventory.getUpdatedAt())
                 .itemDetails(itemDetails)
                 .build();
+    }
+
+    @Override
+    public void adjustInventoryForQuality(QualityAdjustmentRequest request) {
+        log.info("📊 Adjusting inventory for quality results - item: {}, status: {}, total: {}",
+                request.getItemId(), request.getQualityStatus(), request.getTotalQuantity());
+
+        try {
+            // Find inventory by item and location
+            Inventory inventory;
+            if (request.getLocationId() != null) {
+                inventory = inventoryRepository.findByItemIdAndLocationId(
+                        request.getItemId().toString(),
+                        request.getLocationId().toString()
+                ).orElseThrow(() -> new ResourceNotFoundException(
+                        "Inventory not found for item: " + request.getItemId() +
+                        " at location: " + request.getLocationId()));
+            } else {
+                // If no location specified, find first inventory for this item
+                List<Inventory> inventories = inventoryRepository.findByItemId(request.getItemId().toString());
+                if (inventories.isEmpty()) {
+                    throw new ResourceNotFoundException("No inventory found for item: " + request.getItemId());
+                }
+                inventory = inventories.get(0);
+                log.warn("⚠️ No location specified, using first available inventory location: {}",
+                        inventory.getLocationId());
+            }
+
+            String qualityStatus = request.getQualityStatus().toUpperCase();
+
+            // Adjust quantities based on quality status
+            switch (qualityStatus) {
+                case "PASSED":
+                    // Items passed - no adjustment needed, inventory remains available
+                    log.info("✅ Quality PASSED - {} units remain available", request.getTotalQuantity());
+                    // Optionally update status to ensure it's AVAILABLE
+                    if (inventory.getStatus() != InventoryStatus.AVAILABLE) {
+                        inventory.setStatus(InventoryStatus.AVAILABLE);
+                    }
+                    break;
+
+                case "FAILED":
+                    // Items failed - move to damaged
+                    Double failedQty = request.getFailedQuantity() != null ?
+                            request.getFailedQuantity() : request.getTotalQuantity();
+
+                    log.info("❌ Quality FAILED - moving {} units to damaged", failedQty);
+
+                    // Deduct from available quantity (on-hand)
+                    Double currentOnHand = inventory.getQuantityOnHand();
+                    Double currentDamaged = inventory.getQuantityDamaged() != null ?
+                            inventory.getQuantityDamaged() : 0.0;
+
+                    if (currentOnHand < failedQty) {
+                        log.warn("⚠️ Insufficient quantity on hand ({}) for failed adjustment ({})",
+                                currentOnHand, failedQty);
+                        // Adjust what we can
+                        failedQty = currentOnHand;
+                    }
+
+                    inventory.setQuantityOnHand(currentOnHand - failedQty);
+                    inventory.setQuantityDamaged(currentDamaged + failedQty);
+
+                    // Update status if all inventory is damaged
+                    if (inventory.getAvailableQuantity() <= 0) {
+                        inventory.setStatus(InventoryStatus.DAMAGED);
+                    }
+                    break;
+
+                case "QUARANTINED":
+                    // Items quarantined - mark inventory as quarantined
+                    Double quarantinedQty = request.getQuarantinedQuantity() != null ?
+                            request.getQuarantinedQuantity() : request.getTotalQuantity();
+
+                    log.info("🚫 Quality QUARANTINED - quarantining {} units", quarantinedQty);
+
+                    // Move to reserved/quarantined state
+                    Double currentReserved = inventory.getQuantityReserved() != null ?
+                            inventory.getQuantityReserved() : 0.0;
+                    inventory.setQuantityReserved(currentReserved + quarantinedQty);
+
+                    // Update status to quarantined
+                    inventory.setStatus(InventoryStatus.QUARANTINED);
+                    break;
+
+                default:
+                    log.warn("⚠️ Unknown quality status: {}, no adjustment made", qualityStatus);
+                    return;
+            }
+
+            // Save the updated inventory
+            Inventory updatedInventory = inventoryRepository.save(inventory);
+            log.info("✅ Inventory adjusted successfully - available: {}, damaged: {}, reserved: {}",
+                    updatedInventory.getAvailableQuantity(),
+                    updatedInventory.getQuantityDamaged(),
+                    updatedInventory.getQuantityReserved());
+
+            // Publish inventory event
+            publishInventoryEvent(updatedInventory, "QUALITY_ADJUSTED");
+
+            // Check for low stock and create alert if needed
+            checkLowStockAndCreateAlert(updatedInventory);
+
+        } catch (Exception e) {
+            log.error("❌ Failed to adjust inventory for quality: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to adjust inventory for quality: " + e.getMessage(), e);
+        }
     }
 }

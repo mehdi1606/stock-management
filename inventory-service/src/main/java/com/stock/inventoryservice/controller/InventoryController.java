@@ -295,4 +295,24 @@ public class InventoryController {
         Double quantity = inventoryService.getAvailableQuantity(itemId, locationId);
         return ResponseEntity.ok(quantity);
     }
+
+    // ========== QUALITY CONTROL INTEGRATION ==========
+
+    @PostMapping("/quality-adjustment")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'QUALITY_MANAGER')")
+    @Operation(summary = "Adjust inventory based on quality results",
+               description = "Adjust inventory quantities based on quality inspection results (PASSED/FAILED/QUARANTINED)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Inventory adjusted successfully"),
+            @ApiResponse(responseCode = "404", description = "Inventory not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid adjustment request")
+    })
+    public ResponseEntity<Void> adjustInventoryForQuality(
+            @Valid @RequestBody com.stock.inventoryservice.dto.request.QualityAdjustmentRequest request) {
+        log.info("📊 REST request to adjust inventory based on quality results - item: {}, status: {}, total: {}",
+                request.getItemId(), request.getQualityStatus(), request.getTotalQuantity());
+
+        inventoryService.adjustInventoryForQuality(request);
+        return ResponseEntity.ok().build();
+    }
 }

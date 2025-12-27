@@ -17,17 +17,19 @@ interface QualityControlDetailModalProps {
 export const QualityControlDetailModal: React.FC<QualityControlDetailModalProps> = ({
   isOpen,
   onClose,
-  qualityControl,
+  qualityControl: initialQualityControl,
   onUpdate
 }) => {
   const [loading, setLoading] = useState(false);
   const [attachments, setAttachments] = useState<QualityAttachment[]>([]);
+  const [qualityControl, setQualityControl] = useState<QualityControl>(initialQualityControl);
 
   useEffect(() => {
-    if (isOpen && qualityControl?.id) {
+    if (isOpen && initialQualityControl?.id) {
+      setQualityControl(initialQualityControl);
       fetchAttachments();
     }
-  }, [isOpen, qualityControl?.id]);
+  }, [isOpen, initialQualityControl]);
 
  const fetchAttachments = async () => {
   // ⚠️ TEMPORARY: Backend expects Long (number) but we have UUID (string)
@@ -72,10 +74,14 @@ export const QualityControlDetailModal: React.FC<QualityControlDetailModalProps>
 
     setLoading(true);
     try {
-      await qualityService.updateQualityControlStatus(qualityControl.id, newStatus);
-      toast.success(`Status updated to ${newStatus}`);
+      const updatedQC = await qualityService.updateQualityControlStatus(qualityControl.id, newStatus);
+      toast.success(`✅ Status updated to ${newStatus}`);
+
+      // Update the local state with the new data
+      setQualityControl(updatedQC);
+
+      // Refresh the parent list
       onUpdate?.();
-      onClose();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update status');
     } finally {
@@ -274,6 +280,79 @@ export const QualityControlDetailModal: React.FC<QualityControlDetailModalProps>
               </div>
             )}
           </div>
+
+          {/* Inventory Adjustment Impact */}
+          {(qualityControl.status === 'PASSED' || qualityControl.status === 'FAILED' || qualityControl.status === 'QUARANTINED') && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <CheckCircle className="text-blue-600" size={20} />
+                Inventory Adjustment Impact
+              </h3>
+              <div className="space-y-3">
+                <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadge(qualityControl.status)}`}>
+                      {qualityControl.status}
+                    </span>
+                  </div>
+                </div>
+
+                {qualityControl.status === 'PASSED' && (
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="text-green-600 mt-0.5" size={16} />
+                      <div>
+                        <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                          Items remain available in inventory
+                        </p>
+                        <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                          {qualityControl.quantityInspected} units passed inspection and are available for use
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {qualityControl.status === 'FAILED' && (
+                  <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
+                    <div className="flex items-start gap-2">
+                      <XCircle className="text-red-600 mt-0.5" size={16} />
+                      <div>
+                        <p className="text-sm font-medium text-red-900 dark:text-red-100">
+                          Items moved to damaged inventory
+                        </p>
+                        <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                          {qualityControl.failedQuantity || qualityControl.quantityInspected} units failed inspection and were deducted from available stock
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {qualityControl.status === 'QUARANTINED' && (
+                  <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded border border-orange-200 dark:border-orange-800">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="text-orange-600 mt-0.5" size={16} />
+                      <div>
+                        <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                          Items placed in quarantine
+                        </p>
+                        <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                          {qualityControl.quantityInspected} units are quarantined and reserved from available stock
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  <span>Inventory adjustments are applied automatically when status changes</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Inspection Results */}
           {qualityControl.inspectionResults && qualityControl.inspectionResults.length > 0 && (

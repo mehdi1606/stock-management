@@ -155,6 +155,30 @@ public class InventoryServiceClient {
     }
 
     /**
+     * Adjust inventory based on quality control results
+     */
+    public Boolean adjustInventoryForQuality(QualityAdjustmentRequest request) {
+        try {
+            log.info("📊 Adjusting inventory based on quality results - item: {}, passed: {}, failed: {}",
+                     request.getItemId(), request.getPassedQuantity(), request.getFailedQuantity());
+
+            String url = inventoryServiceUrl + "/api/inventory/quality-adjustment";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<QualityAdjustmentRequest> entity = new HttpEntity<>(request, headers);
+
+            restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
+            log.info("✅ Inventory adjusted successfully based on quality results");
+            return true;
+
+        } catch (Exception e) {
+            log.error("❌ Failed to adjust inventory for quality: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Inventory DTO
      */
     @lombok.Data
@@ -195,6 +219,25 @@ public class InventoryServiceClient {
         private UUID itemId;
         private UUID locationId;
         private Double quantity;
+        private String reason;
+    }
+
+    /**
+     * Quality Adjustment Request
+     */
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class QualityAdjustmentRequest {
+        private UUID itemId;
+        private UUID locationId;
+        private UUID lotId;
+        private String qualityStatus; // PASSED, FAILED, QUARANTINED
+        private Double totalQuantity;
+        private Double passedQuantity;
+        private Double failedQuantity;
+        private Double quarantinedQuantity;
+        private String inspectionId;
         private String reason;
     }
 }
