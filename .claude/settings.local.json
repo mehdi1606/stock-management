@@ -15,7 +15,9 @@
       "Bash(npm run dev:*)",
       "Bash(wc:*)",
       "Bash(find:*)",
-      "Bash(./mvnw clean compile:*)"
+      "Bash(./mvnw clean compile:*)",
+      "Bash(./mvnw clean package:*)",
+      "Bash(timeout 15 docker-compose logs:*)"
     ],
     "deny": [],
     "ask": []

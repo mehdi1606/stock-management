@@ -1,5 +1,6 @@
 package com.stock.authservice.controller;
 
+import com.stock.authservice.dto.request.ChangePasswordRequest;
 import com.stock.authservice.dto.request.UserCreateRequest;
 import com.stock.authservice.dto.request.UserRoleAssignRequest;
 import com.stock.authservice.dto.request.UserUpdateRequest;
@@ -106,6 +107,36 @@ public class UserController {
         log.info("GET /api/users/active - Get active users");
 
         PageResponse<UserResponse> response = userService.getActiveUsers(page, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // ==================== UPDATE PREFERENCES ====================
+
+    @PutMapping("/preferences")
+    @Operation(summary = "Update user preferences", description = "Update current user's preferences")
+    public ResponseEntity<ApiResponse<UserResponse>> updatePreferences(
+            @RequestBody UserUpdateRequest request,
+            Authentication authentication) {
+        log.info("PUT /api/users/preferences - Update user preferences");
+
+        String userId = ((CustomUserDetails) authentication.getPrincipal()).getId();
+        ApiResponse<UserResponse> response = userService.updateUser(userId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // ==================== CHANGE PASSWORD ====================
+
+    @PutMapping("/change-password")
+    @Operation(summary = "Change password", description = "Change current user's password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+        log.info("PUT /api/users/change-password - Change password");
+
+        String userId = ((CustomUserDetails) authentication.getPrincipal()).getId();
+        ApiResponse<Void> response = userService.changePassword(userId, request);
 
         return ResponseEntity.ok(response);
     }

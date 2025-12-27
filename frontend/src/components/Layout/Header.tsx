@@ -45,15 +45,21 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   // Get unread alert count from the custom hook
   const unreadCount = useUnreadAlertCount();
 
-  // Load profile image from localStorage
+  // Load profile image from user object or localStorage
   useEffect(() => {
     if (user?.id) {
-      const savedImage = localStorage.getItem(`profile_image_${user.id}`);
-      if (savedImage) {
-        setProfileImage(savedImage);
+      // First check if user has profileImageUrl in their data
+      if (user.profileImageUrl) {
+        setProfileImage(user.profileImageUrl);
+      } else {
+        // Fallback to localStorage
+        const savedImage = localStorage.getItem(`profile_image_${user.id}`);
+        if (savedImage) {
+          setProfileImage(savedImage);
+        }
       }
     }
-  }, [user?.id]);
+  }, [user?.id, user?.profileImageUrl]);
 
   // Apply dark mode class to document element
   useEffect(() => {
@@ -246,8 +252,12 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                 >
                   <div className="p-4 border-b border-neutral-200 dark:border-neutral-700 bg-gradient-to-br from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
-                        {getUserInitials()}
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg overflow-hidden">
+                        {profileImage ? (
+                          <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          getUserInitials()
+                        )}
                       </div>
                       <div>
                         <p className="font-semibold text-neutral-800 dark:text-neutral-100">

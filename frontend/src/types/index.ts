@@ -641,9 +641,14 @@ export interface User {
   lastName?: string;
   fullName?: string;
   phone?: string;
+  phoneNumber?: string;
+  profileImageUrl?: string;
   role?: string;
   roles?: string[];
   status: string;
+  isActive?: boolean;
+  isLocked?: boolean;
+  isEmailVerified?: boolean;
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;

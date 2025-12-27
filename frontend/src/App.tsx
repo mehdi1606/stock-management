@@ -45,8 +45,8 @@ import { QuarantinesPage } from './pages/quality/QuarantinesPage';
 // Alerts Pages
 import { AlertsPage } from '@/pages/Alerts/AlertsPage';
 
-// Profile Pages
-import { ProfilePage } from '@/pages/profile';
+// Profile Page
+import { ProfilePage } from '@/pages/profile/ProfilePage';
 
 // Protected Route Component - FIXED VERSION
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {

@@ -21,10 +21,17 @@ import {
   Smartphone
 } from 'lucide-react';
 import { authService } from '@/services/auth.service';
+import { userService, UserUpdateRequest } from '@/services/user.service';
 import { User } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'react-hot-toast';
+import { ProfileDetailModal } from '@/components/profile/ProfileDetailModal';
+import { ProfileFormModal } from '@/components/profile/ProfileFormModal';
+import { NotificationPreferencesModal } from '@/components/profile/NotificationPreferencesModal';
+import { LanguageRegionModal } from '@/components/profile/LanguageRegionModal';
+import { ChangePasswordModal } from '@/components/profile/ChangePasswordModal';
+import { preferencesService, NotificationPreferences, LanguageRegionPreferences } from '@/services/preferences.service';
 
 export const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -33,31 +40,60 @@ export const ProfilePage: React.FC = () => {
   const [editedUser, setEditedUser] = useState<Partial<User>>({});
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences | null>(null);
+  const [languagePrefs, setLanguagePrefs] = useState<LanguageRegionPreferences | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadUserData();
+    fetchUser();
+    loadPreferences();
   }, []);
 
-  const loadUserData = () => {
+  const loadPreferences = async () => {
+    const prefs = await preferencesService.loadPreferencesFromBackend();
+    setNotificationPrefs(prefs.notifications);
+    setLanguagePrefs(prefs.languageRegion);
+  };
+
+  const fetchUser = async () => {
     setLoading(true);
     try {
-      const currentUser = authService.getCurrentUser();
+      const currentUser = await userService.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
-        setEditedUser(currentUser);
-        // Load profile image from localStorage or user object
-        const savedImage = localStorage.getItem(`profile_image_${currentUser.id}`);
-        if (savedImage) {
-          setProfileImage(savedImage);
+        if (currentUser.profileImageUrl) {
+          setProfileImage(currentUser.profileImageUrl);
         }
       }
     } catch (error) {
-      console.error('Failed to load user data:', error);
-      toast.error('Failed to load profile data');
+      console.error('Failed to fetch user:', error);
+      const localUser = authService.getCurrentUser();
+      if (localUser) {
+        setUser(localUser);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleProfileUpdate = async () => {
+    await fetchUser();
+    setShowFormModal(false);
+  };
+
+  const handleSaveNotificationPreferences = async (prefs: NotificationPreferences) => {
+    await preferencesService.saveNotificationPreferences(prefs);
+    setNotificationPrefs(prefs);
+  };
+
+  const handleSaveLanguagePreferences = async (prefs: LanguageRegionPreferences) => {
+    await preferencesService.saveLanguageRegionPreferences(prefs);
+    setLanguagePrefs(prefs);
   };
 
   const handleEdit = () => {
@@ -72,25 +108,40 @@ export const ProfilePage: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (!user) return;
+
     try {
-      // Save profile image to localStorage if changed
-      if (imageFile && user) {
-        localStorage.setItem(`profile_image_${user.id}`, profileImage!);
+      // Prepare update request
+      const updateData: UserUpdateRequest = {
+        firstName: editedUser.firstName,
+        lastName: editedUser.lastName,
+        phoneNumber: editedUser.phoneNumber || editedUser.phone,
+        email: editedUser.email,
+      };
+
+      // Add profile image if changed
+      if (profileImage) {
+        updateData.profileImageUrl = profileImage;
       }
 
-      // TODO: Implement API call to update user profile
+      // Call backend API to update user
+      const updatedUser = await userService.updateUser(user.id, updateData);
+
+      // Update local state
+      setUser(updatedUser);
+      setEditedUser(updatedUser);
+
+      // Save profile image to localStorage as backup
+      if (profileImage) {
+        localStorage.setItem(`profile_image_${user.id}`, profileImage);
+      }
+
       toast.success('Profile updated successfully');
       setIsEditing(false);
-      if (user) {
-        const updatedUser = { ...user, ...editedUser };
-        setUser(updatedUser);
-        // Update user in localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-      }
       setImageFile(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(error?.response?.data?.message || 'Failed to update profile');
     }
   };
 
@@ -117,11 +168,50 @@ export const ProfilePage: React.FC = () => {
         return;
       }
 
+      // Resize and compress image
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-        setImageFile(file);
-        toast.success('Image selected. Click Save to update.');
+        const img = new Image();
+        img.onload = () => {
+          // Create canvas to resize image
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          // Resize to max 400x400 for profile pictures
+          const MAX_SIZE = 400;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height = (height * MAX_SIZE) / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width = (width * MAX_SIZE) / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Convert to base64 with compression (0.8 quality)
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+          // Check if compressed image is still too large (> 500KB base64)
+          if (compressedBase64.length > 500 * 1024) {
+            toast.error('Image is too large even after compression. Please choose a smaller image.');
+            return;
+          }
+
+          setProfileImage(compressedBase64);
+          setImageFile(file);
+          toast.success('Image selected. Click Save to update.');
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
@@ -243,8 +333,8 @@ export const ProfilePage: React.FC = () => {
 
           <div className="px-8 pb-8">
             {/* Avatar Section */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-end -mt-20 mb-8">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row items-center sm:items-end mb-8">
+              <div className="relative -mt-20">
                 {/* Avatar Container */}
                 <div className="relative w-40 h-40">
                   {/* Main Avatar Circle */}
@@ -300,14 +390,11 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               <div className="sm:ml-8 mt-6 sm:mt-0 mb-4 text-center sm:text-left">
-                
-                <div className="flex flex-wrap items-center gap-3 mt-4 justify-center sm:justify-start">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username}
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                  {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username}
                 </h2>
-                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border-2 ${getStatusColor(user.status)} shadow-sm`}>
-                    {user.status}
-                  </span>
+
+                <div className="flex flex-wrap items-center gap-3 justify-center sm:justify-start">
                   {user.roles && user.roles.length > 0 && (
                     <span className="px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 border-2 border-indigo-200 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-400 dark:border-indigo-700 shadow-sm">
                       <Shield className="inline-block w-4 h-4 mr-1" />
@@ -396,14 +483,14 @@ export const ProfilePage: React.FC = () => {
                     {isEditing ? (
                       <Input
                         type="tel"
-                        value={editedUser.phone || ''}
-                        onChange={(e) => handleChange('phone', e.target.value)}
+                        value={editedUser.phoneNumber || editedUser.phone || ''}
+                        onChange={(e) => handleChange('phoneNumber', e.target.value)}
                         placeholder="Enter phone number"
                         className="font-medium text-lg"
                       />
                     ) : (
                       <p className="text-gray-900 dark:text-white font-medium text-lg">
-                        {user.phone || 'Not set'}
+                        {user.phoneNumber || user.phone || 'Not set'}
                       </p>
                     )}
                   </div>
@@ -520,14 +607,14 @@ export const ProfilePage: React.FC = () => {
                   </h4>
                   <div className="space-y-3">
                     <button
-                      onClick={() => toast.info('Change password feature coming soon')}
+                      onClick={() => setShowChangePasswordModal(true)}
                       className="w-full text-left text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium flex items-center gap-2"
                     >
                       <Key size={16} />
                       Change Password
                     </button>
                     <button
-                      onClick={() => toast.info('2FA setup coming soon')}
+                      onClick={() => toast.info('2FA feature coming soon')}
                       className="w-full text-left text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium flex items-center gap-2"
                     >
                       <Smartphone size={16} />
@@ -544,14 +631,14 @@ export const ProfilePage: React.FC = () => {
                   </h4>
                   <div className="space-y-3">
                     <button
-                      onClick={() => toast.info('Notification settings coming soon')}
+                      onClick={() => setShowNotificationsModal(true)}
                       className="w-full text-left text-sm text-purple-600 dark:text-purple-400 hover:underline font-medium flex items-center gap-2"
                     >
                       <Bell size={16} />
                       Notifications
                     </button>
                     <button
-                      onClick={() => toast.info('Language settings coming soon')}
+                      onClick={() => setShowLanguageModal(true)}
                       className="w-full text-left text-sm text-purple-600 dark:text-purple-400 hover:underline font-medium flex items-center gap-2"
                     >
                       <Globe size={16} />
@@ -564,6 +651,42 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <ProfileDetailModal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        user={user}
+        onEdit={() => {
+          setShowDetailModal(false);
+          setShowFormModal(true);
+        }}
+      />
+      <ProfileFormModal
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        user={user}
+        onSuccess={handleProfileUpdate}
+      />
+      <NotificationPreferencesModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+        onSave={handleSaveNotificationPreferences}
+        initialPreferences={notificationPrefs || undefined}
+      />
+      <LanguageRegionModal
+        isOpen={showLanguageModal}
+        onClose={() => setShowLanguageModal(false)}
+        onSave={handleSaveLanguagePreferences}
+        initialPreferences={languagePrefs || undefined}
+      />
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        onSuccess={() => {
+          setShowChangePasswordModal(false);
+        }}
+      />
     </div>
   );
 };

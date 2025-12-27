@@ -1,6 +1,6 @@
 // src/components/quality-controls/QualityControlDetailModal.tsx
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, XCircle, AlertTriangle, FileText, Download, Calendar, User, MapPin } from 'lucide-react';
+import { X, CheckCircle, XCircle, AlertTriangle, AlertCircle, FileText, Download, Calendar, User, MapPin } from 'lucide-react';
 import { qualityService } from '@/services/quality.service';
 import { QualityControl, QualityAttachment } from '@/types';
 import { Button } from '@/components/ui/Button';
@@ -67,6 +67,22 @@ export const QualityControlDetailModal: React.FC<QualityControlDetailModalProps>
     }
   };
 
+  const handleUpdateStatus = async (newStatus: string) => {
+    if (!window.confirm(`Are you sure you want to update status to ${newStatus}?`)) return;
+
+    setLoading(true);
+    try {
+      await qualityService.updateQualityControlStatus(qualityControl.id, newStatus);
+      toast.success(`Status updated to ${newStatus}`);
+      onUpdate?.();
+      onClose();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
@@ -90,6 +106,30 @@ export const QualityControlDetailModal: React.FC<QualityControlDetailModalProps>
       UNDER_REVIEW: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     };
     return colors[disposition] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+  };
+
+  const getAvailableStatusActions = () => {
+    const actions: { label: string; status: string; color: string; icon: any }[] = [];
+
+    switch (qualityControl.status) {
+      case 'PENDING':
+        actions.push({ label: 'Start Inspection', status: 'IN_PROGRESS', color: 'blue', icon: AlertCircle });
+        break;
+      case 'IN_PROGRESS':
+        actions.push({ label: 'Mark as Passed', status: 'PASSED', color: 'green', icon: CheckCircle });
+        actions.push({ label: 'Mark as Failed', status: 'FAILED', color: 'red', icon: XCircle });
+        actions.push({ label: 'Quarantine', status: 'QUARANTINED', color: 'orange', icon: AlertTriangle });
+        break;
+      case 'FAILED':
+        actions.push({ label: 'Quarantine', status: 'QUARANTINED', color: 'orange', icon: AlertTriangle });
+        actions.push({ label: 'Conditional Accept', status: 'CONDITIONAL_ACCEPT', color: 'purple', icon: CheckCircle });
+        break;
+      case 'QUARANTINED':
+        actions.push({ label: 'Re-inspect', status: 'IN_PROGRESS', color: 'blue', icon: AlertCircle });
+        break;
+    }
+
+    return actions;
   };
 
   if (!isOpen || !qualityControl) return null;
@@ -137,28 +177,54 @@ export const QualityControlDetailModal: React.FC<QualityControlDetailModalProps>
                 )}
               </div>
 
-              {/* Approval Actions */}
-              {qualityControl.status === 'PASSED' && !qualityControl.approvedAt && (
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleApprove}
-                    disabled={loading}
-                    className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
-                  >
-                    <CheckCircle size={16} />
-                    Approve
-                  </Button>
-                  <Button
-                    onClick={handleReject}
-                    disabled={loading}
-                    variant="outline"
-                    className="text-red-600 border-red-600 hover:bg-red-50 flex items-center gap-2"
-                  >
-                    <XCircle size={16} />
-                    Reject
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2 flex-wrap">
+                {/* Status Update Actions */}
+                {getAvailableStatusActions().map((action) => {
+                  const Icon = action.icon;
+                  const colorClasses = {
+                    blue: 'bg-blue-600 hover:bg-blue-700',
+                    green: 'bg-green-600 hover:bg-green-700',
+                    red: 'bg-red-600 hover:bg-red-700',
+                    orange: 'bg-orange-600 hover:bg-orange-700',
+                    purple: 'bg-purple-600 hover:bg-purple-700',
+                  };
+
+                  return (
+                    <Button
+                      key={action.status}
+                      onClick={() => handleUpdateStatus(action.status)}
+                      disabled={loading}
+                      className={`${colorClasses[action.color as keyof typeof colorClasses]} text-white flex items-center gap-2`}
+                    >
+                      <Icon size={16} />
+                      {action.label}
+                    </Button>
+                  );
+                })}
+
+                {/* Approval Actions */}
+                {qualityControl.status === 'PASSED' && !qualityControl.approvedAt && (
+                  <>
+                    <Button
+                      onClick={handleApprove}
+                      disabled={loading}
+                      className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <CheckCircle size={16} />
+                      Approve
+                    </Button>
+                    <Button
+                      onClick={handleReject}
+                      disabled={loading}
+                      variant="danger"
+                      className="flex items-center gap-2"
+                    >
+                      <XCircle size={16} />
+                      Reject
+                    </Button>
+                  </>
+                )}
+              </div>
 
               {qualityControl.approvedAt && (
                 <div className="text-right">

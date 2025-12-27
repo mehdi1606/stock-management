@@ -1,5 +1,6 @@
 package com.stock.authservice.service;
 
+import com.stock.authservice.dto.request.ChangePasswordRequest;
 import com.stock.authservice.dto.request.UserCreateRequest;
 import com.stock.authservice.dto.request.UserRoleAssignRequest;
 import com.stock.authservice.dto.request.UserUpdateRequest;
@@ -11,6 +12,7 @@ import com.stock.authservice.entity.User;
 import com.stock.authservice.event.UserEventPublisher;
 import com.stock.authservice.event.dto.UserCreatedEvent;
 import com.stock.authservice.exception.DuplicateResourceException;
+import com.stock.authservice.exception.InvalidCredentialsException;
 import com.stock.authservice.exception.ResourceNotFoundException;
 import com.stock.authservice.repository.RoleRepository;
 import com.stock.authservice.repository.UserRepository;
@@ -193,12 +195,43 @@ public class UserService {
         if (request.getLanguage() != null) user.setLanguage(request.getLanguage());
         if (request.getTimezone() != null) user.setTimezone(request.getTimezone());
         if (request.getProfileImageUrl() != null) user.setProfileImageUrl(request.getProfileImageUrl());
+        if (request.getMetadata() != null) user.setMetadata(request.getMetadata());
 
         user = userRepository.save(user);
 
         log.info("User updated successfully: {}", user.getUsername());
 
         return ApiResponse.success("User updated successfully", mapToUserResponse(user));
+    }
+
+    // ==================== CHANGE PASSWORD ====================
+
+    @Transactional
+    public ApiResponse<Void> changePassword(String userId, ChangePasswordRequest request) {
+        log.info("Changing password for user: {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        // Verify current password
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            log.warn("Invalid current password for user: {}", userId);
+            throw new InvalidCredentialsException("Current password is incorrect");
+        }
+
+        // Check if new password is same as current
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+
+        // Update password
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setLastPasswordChange(LocalDateTime.now());
+        userRepository.save(user);
+
+        log.info("Password changed successfully for user: {}", user.getUsername());
+
+        return ApiResponse.success("Password changed successfully", null);
     }
 
     // ==================== DELETE USER ====================
@@ -361,6 +394,10 @@ public class UserService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .phoneNumber(user.getPhoneNumber())
+                .profileImageUrl(user.getProfileImageUrl())
+                .language(user.getLanguage())
+                .timezone(user.getTimezone())
+                .metadata(user.getMetadata())
                 .isActive(user.getIsActive())
                 .isLocked(user.getIsLocked())
                 .isEmailVerified(user.getIsEmailVerified())
