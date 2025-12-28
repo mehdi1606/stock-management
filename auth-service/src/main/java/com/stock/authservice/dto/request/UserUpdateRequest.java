@@ -21,4 +21,5 @@ public class UserUpdateRequest {
     private String language;
     private String timezone;
     private String profileImageUrl;
+    private String metadata;
 }

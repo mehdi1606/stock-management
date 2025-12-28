@@ -56,6 +56,7 @@ export const QualityControlFormModal: React.FC<QualityControlFormModalProps> = (
     quantityInspected: 1, // ✅ Default to 1 (backend requires @Positive)
     inspectionType: 'INCOMING',
     status: 'PENDING',
+    result: '',
     inspectorId: '',
     inspectionLocationId: '',
     scheduledDate: '',
@@ -347,15 +348,35 @@ submitData.inspectorId = finalInspectorId;
 
       let response;
       if (qualityControl) {
-        // Update existing - include additional fields
-        const updateData = {
-          ...submitData,
+        // Update existing - align with backend expectations
+        const updateData: any = {
+          inspectionType: formData.inspectionType,
           status: formData.status,
           defectCount: formData.defectCount,
-          inspectorNotes: formData.inspectorNotes,
-          correctiveAction: formData.correctiveAction,
-          inspectionResults: inspectionResults
+          samplesInspected: formData.quantityInspected,
+          inspectorId: submitData.inspectorId
         };
+
+        // Only add optional fields if they have values
+        if (formData.result) {
+          updateData.result = formData.result;
+        }
+        if (formData.inspectorNotes) {
+          updateData.defectDescription = formData.inspectorNotes;
+          updateData.notes = formData.inspectorNotes;
+        }
+        if (formData.correctiveAction) {
+          updateData.correctiveActions = formData.correctiveAction;
+        }
+        if (formData.scheduledDate) {
+          // Convert date to ISO datetime format
+          updateData.inspectionDate = formData.scheduledDate + 'T00:00:00';
+        }
+        if (inspectionResults && inspectionResults.length > 0) {
+          updateData.inspectionResults = inspectionResults;
+        }
+
+        console.log('📤 UPDATE DATA:', JSON.stringify(updateData, null, 2));
         response = await qualityService.updateQualityControl(qualityControl.id, updateData);
         toast.success('Quality control updated successfully');
       } else {
@@ -385,8 +406,11 @@ submitData.inspectorId = finalInspectorId;
       onClose();
       resetForm();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save quality control');
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to save quality control';
+      toast.error(errorMessage);
       console.error('❌ Quality control save error:', error);
+      console.error('❌ Error response data:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
     } finally {
       setLoading(false);
     }
@@ -604,6 +628,25 @@ submitData.inspectorId = finalInspectorId;
                   <option value="FAILED">Failed</option>
                   <option value="QUARANTINED">Quarantined</option>
                   <option value="CONDITIONAL_ACCEPT">Conditional Accept</option>
+                </Select>
+              </div>
+
+              {/* Result/Disposition */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Result
+                </label>
+                <Select
+                  name="result"
+                  value={formData.result || ''}
+                  onChange={handleChange}
+                >
+                  <option value="">Not Set</option>
+                  <option value="ACCEPT">Accept</option>
+                  <option value="REJECT">Reject</option>
+                  <option value="CONDITIONAL_ACCEPT">Conditional Accept</option>
+                  <option value="REWORK">Rework</option>
+                  <option value="SCRAP">Scrap</option>
                 </Select>
               </div>
 

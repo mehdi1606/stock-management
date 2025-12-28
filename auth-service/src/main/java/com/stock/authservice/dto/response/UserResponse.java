@@ -20,6 +20,10 @@ public class UserResponse {
     private String firstName;
     private String lastName;
     private String phoneNumber;
+    private String profileImageUrl;
+    private String language;
+    private String timezone;
+    private String metadata;
     private Boolean isActive;
     private Boolean isLocked;
     private Boolean isEmailVerified;

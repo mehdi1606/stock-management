@@ -7,6 +7,7 @@ import {
   ClipboardCheck, AlertTriangle, RefreshCw, Filter 
 } from 'lucide-react';
 import { qualityService } from '@/services/quality.service';
+import { productService } from '@/services/product.service';
 import { QualityControl } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -26,6 +27,7 @@ export const QualityControlsPage = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterResult, setFilterResult] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [itemsData, setItemsData] = useState<Map<string, any>>(new Map());
 
   // Modal states
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -33,6 +35,47 @@ export const QualityControlsPage = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedQC, setSelectedQC] = useState<QualityControl | null>(null);
+
+  // ✅ Enrich quality controls with item data
+  const enrichWithItemData = async (controls: QualityControl[]) => {
+    const newItemsMap = new Map(itemsData);
+
+    for (const qc of controls) {
+      if (qc.itemId && !newItemsMap.has(qc.itemId)) {
+        try {
+          const item = await productService.getItemById(qc.itemId);
+
+          // Fetch category if not included in item response
+          let categoryName = 'Unknown Category';
+          if (item.category?.name) {
+            categoryName = item.category.name;
+          } else if (item.categoryId) {
+            try {
+              const category = await productService.getCategoryById(item.categoryId);
+              categoryName = category.name;
+            } catch (catError) {
+              console.error('Error fetching category:', catError);
+            }
+          }
+
+          newItemsMap.set(qc.itemId, {
+            name: item.name,
+            categoryName: categoryName,
+            sku: item.sku,
+          });
+        } catch (error) {
+          console.error('Error fetching item:', error);
+          newItemsMap.set(qc.itemId, {
+            name: 'Unknown Item',
+            categoryName: 'Unknown Category',
+            sku: qc.itemId.slice(0, 8),
+          });
+        }
+      }
+    }
+
+    setItemsData(newItemsMap);
+  };
 
   // ✅ Fetch quality controls
   const fetchQualityControls = async () => {
@@ -42,6 +85,10 @@ export const QualityControlsPage = () => {
       const controls = Array.isArray(data) ? data : (data?.content || []);
       setQualityControls(controls);
       setFilteredQualityControls(controls);
+
+      // Enrich with item data
+      await enrichWithItemData(controls);
+
       console.log('✅ Quality Controls loaded:', controls.length);
     } catch (error) {
       toast.error('Failed to fetch quality controls');
@@ -79,9 +126,9 @@ export const QualityControlsPage = () => {
 
     // Result filter
     if (filterResult === 'passed') {
-      filtered = filtered.filter((qc) => qc.passed === true);
+      filtered = filtered.filter((qc) => qc.status === 'PASSED');
     } else if (filterResult === 'failed') {
-      filtered = filtered.filter((qc) => qc.passed === false);
+      filtered = filtered.filter((qc) => qc.status === 'FAILED');
     }
 
     // Type filter
@@ -308,13 +355,13 @@ export const QualityControlsPage = () => {
         <div className="bg-green-50 rounded-lg shadow-sm p-4">
           <div className="text-sm text-green-600">Passed</div>
           <div className="text-2xl font-bold text-green-700">
-            {qualityControls.filter(qc => qc.passed === true).length}
+            {qualityControls.filter(qc => qc.status === 'PASSED').length}
           </div>
         </div>
         <div className="bg-red-50 rounded-lg shadow-sm p-4">
           <div className="text-sm text-red-600">Failed</div>
           <div className="text-2xl font-bold text-red-700">
-            {qualityControls.filter(qc => qc.passed === false).length}
+            {qualityControls.filter(qc => qc.status === 'FAILED').length}
           </div>
         </div>
         <div className="bg-yellow-50 rounded-lg shadow-sm p-4">
@@ -369,14 +416,16 @@ export const QualityControlsPage = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredQualityControls.map((qc) => (
+                {filteredQualityControls.map((qc) => {
+                  const itemData = itemsData.get(qc.itemId);
+                  return (
                   <tr key={qc.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {qc.controlNumber || qc.inspectionNumber || qc.id.slice(0, 8)}
+                        {itemData?.categoryName || 'Unknown Category'}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Item: {qc.itemId?.slice(0, 8)}
+                        {itemData?.name || qc.itemId?.slice(0, 8)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -388,13 +437,15 @@ export const QualityControlsPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {qc.passed !== undefined && (
+                      {qc.status && (
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          qc.passed 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
+                          qc.status === 'PASSED'
+                            ? 'bg-green-100 text-green-800'
+                            : qc.status === 'FAILED'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {qc.passed ? 'PASSED' : 'FAILED'}
+                          {qc.status}
                         </span>
                       )}
                     </td>
@@ -458,7 +509,8 @@ export const QualityControlsPage = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

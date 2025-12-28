@@ -49,9 +49,16 @@ public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // Auth Service - NO JWT FILTER
-                .route("auth-service", r -> r
+                // Auth Service - NO JWT FILTER (public endpoints)
+                .route("auth-service-public", r -> r
                         .path("/api/auth/**")
+                        .uri(authServiceUrl))
+
+                // Auth Service - JWT REQUIRED (user management endpoints)
+                .route("auth-service-users", r -> r
+                        .path("/api/users/**")
+                        .filters(f -> f
+                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
                         .uri(authServiceUrl))
 
                 // Product Service - JWT only

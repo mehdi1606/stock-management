@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -15,15 +16,12 @@ import java.time.LocalDateTime;
 @Builder
 public class QualityControlUpdateRequest {
 
-    @NotNull(message = "Inspection type is required")
     @Size(min = 1, max = 50, message = "Inspection type must be between 1 and 50 characters")
     private String inspectionType;
 
-    @NotNull(message = "Status is required")
     @Size(min = 1, max = 30, message = "Status must be between 1 and 30 characters")
     private String status;
 
-    @NotNull(message = "Result is required")
     @Size(min = 1, max = 30, message = "Result must be between 1 and 30 characters")
     private String result;
 
@@ -39,7 +37,7 @@ public class QualityControlUpdateRequest {
 
     private LocalDateTime inspectionDate;
 
-    private Long inspectorId;
+    private String inspectorId;
 
     private String inspectorName;
 
@@ -48,4 +46,6 @@ public class QualityControlUpdateRequest {
     private LocalDateTime nextInspectionDate;
 
     private String certificateNumber;
+
+    private List<InspectionResultRequest> inspectionResults;
 }

@@ -464,6 +464,7 @@ export interface QualityControl {
   quantityInspected: number;
   inspectionType: string; // QCType enum values
   status: string; // QCStatus enum values
+  result?: string; // Result/Disposition field for updates
   qualityProfileId?: string;
   samplingPlanId?: string;
   inspectorId: string;
@@ -640,9 +641,14 @@ export interface User {
   lastName?: string;
   fullName?: string;
   phone?: string;
+  phoneNumber?: string;
+  profileImageUrl?: string;
   role?: string;
   roles?: string[];
   status: string;
+  isActive?: boolean;
+  isLocked?: boolean;
+  isEmailVerified?: boolean;
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;

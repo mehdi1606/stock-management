@@ -34,6 +34,7 @@ public class QualityControlServiceImpl implements QualityControlService {
     private final com.stock.qualityservice.event.QualityEventPublisher qualityEventPublisher;
     private final com.stock.qualityservice.service.QuarantineService quarantineService;
     private final com.stock.qualityservice.client.LocationServiceClient locationServiceClient;
+    private final com.stock.qualityservice.client.InventoryServiceClient inventoryServiceClient;
 
     @Override
     public QualityControlResponse createQualityControl(QualityControlRequest request) {
@@ -65,7 +66,21 @@ public class QualityControlServiceImpl implements QualityControlService {
         }
 
         updateEntityFromRequest(inspection, request);
+
+        // Set audit trail - capture who updated the record
+        try {
+            String updatedBy = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+            inspection.setUpdatedBy(updatedBy);
+        } catch (Exception e) {
+            log.warn("Could not get authenticated user for audit trail: {}", e.getMessage());
+            inspection.setUpdatedBy("SYSTEM");
+        }
+
         QualityControl updatedInspection = qualityControlRepository.save(inspection);
+
+        // Publish quality control updated event
+        publishQualityControlUpdatedEvent(updatedInspection);
 
         log.info("Quality control updated successfully: {}", id);
         return mapToResponse(updatedInspection);
@@ -142,13 +157,152 @@ public class QualityControlServiceImpl implements QualityControlService {
         QualityControl inspection = qualityControlRepository.findById(id)
                 .orElseThrow(() -> new InspectionNotFoundException(id));
 
+        QCStatus oldStatus = inspection.getStatus();
         QCStatus newStatus = QCStatus.valueOf(status.toUpperCase());
+
+        // Validate status transition
+        validateStatusTransition(oldStatus, newStatus);
+
         inspection.setStatus(newStatus);
+
+        // Set end time for final statuses
+        if (newStatus == QCStatus.PASSED || newStatus == QCStatus.FAILED || newStatus == QCStatus.QUARANTINED) {
+            inspection.setEndTime(LocalDateTime.now());
+
+            // Set approved timestamp
+            if (inspection.getApprovedAt() == null) {
+                inspection.setApprovedAt(LocalDateTime.now());
+                try {
+                    String approvedBy = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication().getName();
+                    inspection.setApprovedBy(approvedBy);
+                } catch (Exception e) {
+                    inspection.setApprovedBy("SYSTEM");
+                }
+            }
+        }
+
+        // Set disposition based on status
+        if (newStatus == QCStatus.PASSED) {
+            inspection.setDisposition(Disposition.ACCEPT);
+        } else if (newStatus == QCStatus.FAILED) {
+            inspection.setDisposition(Disposition.REJECT);
+        } else if (newStatus == QCStatus.QUARANTINED) {
+            inspection.setDisposition(Disposition.QUARANTINE);
+        }
 
         QualityControl updatedInspection = qualityControlRepository.save(inspection);
         log.info("Quality control status updated successfully: {}", id);
 
+        // Adjust inventory based on quality results
+        adjustInventoryForQualityResults(updatedInspection, newStatus);
+
+        // Publish appropriate event
+        publishStatusChangeEvent(updatedInspection, newStatus);
+
         return mapToResponse(updatedInspection);
+    }
+
+    /**
+     * Adjust inventory based on quality control results
+     */
+    private void adjustInventoryForQualityResults(QualityControl inspection, QCStatus newStatus) {
+        try {
+            // Only adjust inventory for final statuses
+            if (newStatus != QCStatus.PASSED && newStatus != QCStatus.FAILED && newStatus != QCStatus.QUARANTINED) {
+                log.debug("Skipping inventory adjustment for non-final status: {}", newStatus);
+                return;
+            }
+
+            log.info("📊 Adjusting inventory based on quality control results for ID: {}", inspection.getId());
+
+            // Parse location ID
+            UUID locationId = null;
+            if (inspection.getInspectionLocationId() != null) {
+                try {
+                    locationId = UUID.fromString(inspection.getInspectionLocationId());
+                } catch (IllegalArgumentException e) {
+                    log.error("Invalid location ID format: {}", inspection.getInspectionLocationId());
+                }
+            }
+
+            // Parse lot ID
+            UUID lotId = null;
+            if (inspection.getLotId() != null) {
+                try {
+                    lotId = UUID.fromString(inspection.getLotId());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Invalid lot ID format: {}", inspection.getLotId());
+                }
+            }
+
+            // Calculate quantities based on status
+            Double totalQuantity = inspection.getQuantityInspected() != null ? inspection.getQuantityInspected() : 0.0;
+            Double passedQuantity = 0.0;
+            Double failedQuantity = 0.0;
+            Double quarantinedQuantity = 0.0;
+
+            if (newStatus == QCStatus.PASSED) {
+                passedQuantity = totalQuantity;
+                inspection.setPassedQuantity(passedQuantity);
+                inspection.setFailedQuantity(0.0);
+            } else if (newStatus == QCStatus.FAILED) {
+                failedQuantity = totalQuantity;
+                inspection.setPassedQuantity(0.0);
+                inspection.setFailedQuantity(failedQuantity);
+            } else if (newStatus == QCStatus.QUARANTINED) {
+                quarantinedQuantity = totalQuantity;
+                inspection.setPassedQuantity(0.0);
+                inspection.setFailedQuantity(0.0);
+            }
+
+            // Update inspection with calculated quantities
+            qualityControlRepository.save(inspection);
+
+            // Build adjustment request
+            com.stock.qualityservice.client.InventoryServiceClient.QualityAdjustmentRequest adjustmentRequest =
+                new com.stock.qualityservice.client.InventoryServiceClient.QualityAdjustmentRequest();
+            adjustmentRequest.setItemId(UUID.fromString(inspection.getItemId()));
+            adjustmentRequest.setLocationId(locationId);
+            adjustmentRequest.setLotId(lotId);
+            adjustmentRequest.setQualityStatus(newStatus.name());
+            adjustmentRequest.setTotalQuantity(totalQuantity);
+            adjustmentRequest.setPassedQuantity(passedQuantity);
+            adjustmentRequest.setFailedQuantity(failedQuantity);
+            adjustmentRequest.setQuarantinedQuantity(quarantinedQuantity);
+            adjustmentRequest.setInspectionId(inspection.getId());
+            adjustmentRequest.setReason("Quality inspection " + newStatus.name().toLowerCase() + " - Inspection #" + inspection.getInspectionNumber());
+
+            // Call inventory service to adjust quantities
+            Boolean success = inventoryServiceClient.adjustInventoryForQuality(adjustmentRequest);
+
+            if (Boolean.TRUE.equals(success)) {
+                log.info("✅ Inventory adjusted successfully for quality control: {}", inspection.getId());
+            } else {
+                log.warn("⚠️ Inventory adjustment returned false for quality control: {}", inspection.getId());
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Failed to adjust inventory for quality control {}: {}", inspection.getId(), e.getMessage(), e);
+            // Don't fail the status update if inventory adjustment fails
+        }
+    }
+
+    /**
+     * Publish appropriate event based on status change
+     */
+    private void publishStatusChangeEvent(QualityControl inspection, QCStatus newStatus) {
+        try {
+            if (newStatus == QCStatus.PASSED) {
+                qualityEventPublisher.publishInspectionCompleted(inspection);
+            } else if (newStatus == QCStatus.FAILED) {
+                qualityEventPublisher.publishInspectionFailed(inspection);
+            } else {
+                qualityEventPublisher.publishQualityControlUpdated(inspection);
+            }
+        } catch (Exception e) {
+            log.error("Failed to publish status change event: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -291,23 +445,131 @@ public class QualityControlServiceImpl implements QualityControlService {
     }
 
     private void updateEntityFromRequest(QualityControl inspection, QualityControlUpdateRequest request) {
-        if (request.getInspectionType() != null) {
-            // Convert string to enum if needed
+        // Update inspection type
+        if (request.getInspectionType() != null && !request.getInspectionType().isEmpty()) {
+            try {
+                inspection.setInspectionType(com.stock.qualityservice.entity.QCType.valueOf(
+                    request.getInspectionType().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid inspection type: {}", request.getInspectionType());
+            }
         }
-        if (request.getStatus() != null) {
-            inspection.setStatus(QCStatus.valueOf(request.getStatus().toUpperCase()));
+
+        // Update status with validation
+        if (request.getStatus() != null && !request.getStatus().isEmpty()) {
+            QCStatus newStatus = QCStatus.valueOf(request.getStatus().toUpperCase());
+            validateStatusTransition(inspection.getStatus(), newStatus);
+            inspection.setStatus(newStatus);
         }
+
+        // Update result/disposition
+        if (request.getResult() != null && !request.getResult().isEmpty()) {
+            try {
+                inspection.setDisposition(Disposition.valueOf(request.getResult().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid result/disposition: {}", request.getResult());
+            }
+        }
+
+        // Update defect count
         if (request.getDefectCount() != null) {
             inspection.setDefectCount(request.getDefectCount());
         }
-        if (request.getDefectDescription() != null) {
-            inspection.setInspectorNotes(request.getDefectDescription());
+
+        // Update samples inspected
+        if (request.getSamplesInspected() != null) {
+            inspection.setQuantityInspected(request.getSamplesInspected().doubleValue());
         }
+
+        // Update defect description - separate from general notes
+        if (request.getDefectDescription() != null) {
+            inspection.setDefectType(request.getDefectDescription());
+        }
+
+        // Update corrective actions
         if (request.getCorrectiveActions() != null) {
             inspection.setCorrectiveAction(request.getCorrectiveActions());
         }
+
+        // Update general notes
         if (request.getNotes() != null) {
             inspection.setInspectorNotes(request.getNotes());
+        }
+
+        // Update inspection date
+        if (request.getInspectionDate() != null) {
+            inspection.setScheduledDate(request.getInspectionDate());
+        }
+
+        // Update inspector information
+        if (request.getInspectorId() != null && !request.getInspectorId().isEmpty()) {
+            inspection.setInspectorId(request.getInspectorId());
+        }
+
+        if (request.getInspectorName() != null && !request.getInspectorName().isEmpty()) {
+            inspection.setInspectedBy(request.getInspectorName());
+        }
+
+        // Update certificate number
+        if (request.getCertificateNumber() != null) {
+            inspection.setNotes(request.getCertificateNumber());
+        }
+
+        // Update inspection results if provided
+        if (request.getInspectionResults() != null && !request.getInspectionResults().isEmpty()) {
+            updateInspectionResults(inspection, request.getInspectionResults());
+        }
+    }
+
+    private void validateStatusTransition(QCStatus currentStatus, QCStatus newStatus) {
+        // If status is not changing, allow it
+        if (currentStatus == newStatus) {
+            return;
+        }
+
+        // Define valid status transitions
+        boolean isValidTransition = switch (currentStatus) {
+            case PENDING -> newStatus == QCStatus.IN_PROGRESS ||
+                           newStatus == QCStatus.QUARANTINED;
+            case IN_PROGRESS -> newStatus == QCStatus.PASSED ||
+                               newStatus == QCStatus.FAILED ||
+                               newStatus == QCStatus.QUARANTINED ||
+                               newStatus == QCStatus.CONDITIONAL_ACCEPT;
+            case QUARANTINED -> newStatus == QCStatus.IN_PROGRESS ||
+                               newStatus == QCStatus.FAILED;
+            case CONDITIONAL_ACCEPT -> newStatus == QCStatus.PASSED ||
+                                      newStatus == QCStatus.FAILED;
+            case PASSED, FAILED -> false; // Already handled in update method
+        };
+
+        if (!isValidTransition) {
+            throw new InvalidInspectionStateException(
+                "Invalid status transition from " + currentStatus + " to " + newStatus);
+        }
+    }
+
+    private void updateInspectionResults(QualityControl inspection,
+                                        List<com.stock.qualityservice.dto.request.InspectionResultRequest> resultRequests) {
+        // Clear existing results
+        inspection.getInspectionResults().clear();
+
+        // Add updated results
+        for (com.stock.qualityservice.dto.request.InspectionResultRequest resultRequest : resultRequests) {
+            InspectionResult result = new InspectionResult();
+            result.setQualityControl(inspection);
+            result.setTestParameter(resultRequest.getTestParameter());
+            result.setExpectedValue(resultRequest.getExpectedValue());
+            result.setActualValue(resultRequest.getActualValue());
+            result.setUnitOfMeasure(resultRequest.getUnitOfMeasure());
+            result.setMinValue(resultRequest.getMinValue());
+            result.setMaxValue(resultRequest.getMaxValue());
+            result.setIsPassed(resultRequest.getIsPassed());
+            result.setDefectType(resultRequest.getDefectType());
+            result.setDefectSeverity(resultRequest.getDefectSeverity());
+            result.setRemarks(resultRequest.getRemarks());
+            result.setSequenceOrder(resultRequest.getSequenceOrder());
+
+            inspection.getInspectionResults().add(result);
         }
     }
 
@@ -370,5 +632,15 @@ public class QualityControlServiceImpl implements QualityControlService {
         response.setSequenceOrder(result.getSequenceOrder());
         response.setCreatedAt(result.getCreatedAt());
         return response;
+    }
+
+    private void publishQualityControlUpdatedEvent(QualityControl inspection) {
+        try {
+            log.info("Publishing quality control updated event for ID: {}", inspection.getId());
+            qualityEventPublisher.publishQualityControlUpdated(inspection);
+        } catch (Exception e) {
+            log.error("Failed to publish quality control updated event: {}", e.getMessage());
+            // Don't fail the update if event publishing fails
+        }
     }
 }

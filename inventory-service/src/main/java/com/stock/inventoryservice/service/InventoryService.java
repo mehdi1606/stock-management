@@ -5,6 +5,7 @@ import com.stock.inventoryservice.dto.request.InventoryAdjustmentRequest;
 import com.stock.inventoryservice.dto.request.InventoryCreateRequest;
 import com.stock.inventoryservice.dto.request.InventoryTransferRequest;
 import com.stock.inventoryservice.dto.request.InventoryUpdateRequest;
+import com.stock.inventoryservice.dto.request.QualityAdjustmentRequest;
 
 import java.util.List;
 
@@ -43,4 +44,7 @@ public interface InventoryService {
     // Stock Availability
     boolean checkStockAvailability(String itemId, String locationId, Double quantity);
     Double getAvailableQuantity(String itemId, String locationId);
+
+    // Quality Control Integration
+    void adjustInventoryForQuality(QualityAdjustmentRequest request);
 }

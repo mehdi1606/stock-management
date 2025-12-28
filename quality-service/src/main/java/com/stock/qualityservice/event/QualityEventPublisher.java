@@ -59,6 +59,35 @@ public class QualityEventPublisher {
     }
 
     /**
+     * 🔄 Publish Quality Control Updated Event
+     */
+    public void publishQualityControlUpdated(QualityControl qc) {
+        log.info("📢 Publishing quality.control.updated event for QC: {}", qc.getId());
+
+        QualityInspectionEvent event = QualityInspectionEvent.builder()
+                .eventId(UUID.randomUUID())
+                .eventType("QUALITY_CONTROL_UPDATED")
+                .eventTime(LocalDateTime.now())
+                .inspectionId(UUID.fromString(qc.getId()))
+                .inspectionNumber(qc.getInspectionNumber())
+                .itemId(UUID.fromString(qc.getItemId()))
+                .lotId(qc.getLotId() != null ? UUID.fromString(qc.getLotId()) : null)
+                .serialNumber(qc.getSerialNumber())
+                .quantityInspected(qc.getQuantityInspected())
+                .result(qc.getDisposition() != null ? qc.getDisposition().name() : null)
+                .status(qc.getStatus().name())
+                .inspectorId(qc.getInspectedBy() != null ? UUID.fromString(qc.getInspectedBy()) : UUID.fromString(qc.getInspectorId()))
+                .disposition(qc.getDisposition() != null ? qc.getDisposition().name() : null)
+                .defectCount(qc.getDefectCount() != null ? qc.getDefectCount() : 0)
+                .defectType(qc.getDefectType())
+                .notes(qc.getNotes())
+                .build();
+
+        kafkaTemplate.send(INSPECTION_TOPIC, qc.getId().toString(), event);
+        log.info("✅ Quality control updated event published successfully");
+    }
+
+    /**
      * ✅ Publish Inspection Completed Event (Approved)
      */
     public void publishInspectionCompleted(QualityControl qc) {
