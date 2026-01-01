@@ -88,7 +88,7 @@ public class User {
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
 
-    @Column(name = "profile_image_url", columnDefinition = "LONGTEXT")
+    @Column(name = "profile_image_url", columnDefinition = "TEXT")
     private String profileImageUrl;
 
     @Column(name = "language", length = 10)
