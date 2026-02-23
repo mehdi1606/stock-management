@@ -72,9 +72,17 @@ public class AuthController {
     @PostMapping("/logout")
     @Operation(summary = "User logout", description = "Logout user and invalidate tokens")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @RequestHeader("Authorization") String authHeader,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             HttpServletRequest httpRequest) {
         log.info("POST /api/auth/logout - Logout request");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            // No valid token — treat as already logged out
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .success(true)
+                    .message("Logged out")
+                    .build());
+        }
 
         String accessToken = authHeader.substring(7); // Remove "Bearer " prefix
         ApiResponse<Void> response = authService.logout(accessToken, httpRequest);

@@ -21,7 +21,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
-  # Default Kafka (for local dev)
   kafka:
     bootstrap-servers: localhost:9092
     producer:
@@ -41,13 +40,19 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: houarimehdi7@gmail.com
-    password: nnoivyxhebwhdhye
+    password: jflhephmpxlznycj
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
+          ssl:
+            trust: smtp.gmail.com
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 # JWT Configuration
 jwt:

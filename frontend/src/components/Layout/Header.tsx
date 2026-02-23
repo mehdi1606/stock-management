@@ -17,6 +17,7 @@ import {
   Moon,
   Sun,
 } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 import { ROUTES } from '@/config/constants';
 import toast from 'react-hot-toast';
 import { NotificationDropdown, useUnreadAlertCount } from '@/components/NotificationDropdown';
@@ -25,21 +26,25 @@ interface HeaderProps {
   onMenuClick?: () => void;
 }
 
+const THEME_LABELS = {
+  light: 'Neumorphism',
+  dark: 'Dark Mode',
+  glass: 'Glassmorphism',
+};
+const THEME_NEXT: Record<string, string> = {
+  light: 'dark',
+  dark: 'glass',
+  glass: 'light',
+};
+
 export const Header = ({ onMenuClick }: HeaderProps) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+  const { theme, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [isDark, setIsDark] = useState(() => {
-    // Initialize from localStorage or system preference
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-      return saved === 'dark';
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
   const [searchQuery, setSearchQuery] = useState('');
 
   // Get unread alert count from the custom hook
@@ -48,29 +53,14 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   // Load profile image from user object or localStorage
   useEffect(() => {
     if (user?.id) {
-      // First check if user has profileImageUrl in their data
       if (user.profileImageUrl) {
         setProfileImage(user.profileImageUrl);
       } else {
-        // Fallback to localStorage
         const savedImage = localStorage.getItem(`profile_image_${user.id}`);
-        if (savedImage) {
-          setProfileImage(savedImage);
-        }
+        if (savedImage) setProfileImage(savedImage);
       }
     }
   }, [user?.id, user?.profileImageUrl]);
-
-  // Apply dark mode class to document element
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
 
   const handleLogout = async () => {
     try {
@@ -84,9 +74,10 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
     }
   };
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    toast.success(!isDark ? 'Dark mode activated' : 'Light mode activated');
+  const handleToggleTheme = () => {
+    toggleTheme();
+    const next = THEME_NEXT[theme];
+    toast.success(`${THEME_LABELS[next as keyof typeof THEME_LABELS]} activated`, { duration: 1800 });
   };
 
   const getUserInitials = () => {
@@ -168,18 +159,20 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             <span>Quick Add</span>
           </motion.button>
 
-          {/* Theme Toggle */}
+          {/* Theme Toggle — cycles light → dark → glass */}
           <motion.button
-            whileHover={{ scale: 1.1, rotate: 180 }}
+            whileHover={{ scale: 1.1, rotate: 20 }}
             whileTap={{ scale: 0.9 }}
-            onClick={toggleTheme}
-            className="p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            onClick={handleToggleTheme}
+            title={`Switch to ${THEME_LABELS[THEME_NEXT[theme] as keyof typeof THEME_LABELS]}`}
+            className="p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors relative group"
           >
-            {isDark ? (
-              <Sun className="w-5 h-5 text-amber-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-            )}
+            {theme === 'light' && <Moon className="w-5 h-5 text-neutral-600" />}
+            {theme === 'dark' && <Sparkles className="w-5 h-5 text-indigo-400" />}
+            {theme === 'glass' && <Sun className="w-5 h-5 text-amber-300" />}
+            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold bg-neutral-900 text-white px-2 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              → {THEME_LABELS[THEME_NEXT[theme] as keyof typeof THEME_LABELS]}
+            </span>
           </motion.button>
 
           {/* Notifications */}

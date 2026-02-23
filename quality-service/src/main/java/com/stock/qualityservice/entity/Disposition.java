@@ -7,5 +7,6 @@ public enum Disposition {
     SCRAP,               // Dispose/scrap
     CONDITIONAL_ACCEPT,  // Accept with conditions
     RETURN_TO_SUPPLIER,  // Return to vendor
+    QUARANTINE,  
     UNDER_REVIEW         // Pending decision
 }

@@ -154,6 +154,15 @@ public class QualityAttachmentServiceImpl implements QualityAttachmentService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<QualityAttachmentResponse> getAllAttachments() {
+        log.info("Fetching all attachments");
+        return attachmentRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public QualityAttachmentResponse getAttachmentById(String id) {
         log.info("Fetching attachment by ID: {}", id);
 

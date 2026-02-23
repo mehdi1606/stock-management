@@ -13,6 +13,8 @@ public interface QualityAttachmentService {
     QualityAttachmentResponse uploadFile(MultipartFile file, String qualityControlId, String quarantineId,
                                          String description, String attachmentType);
 
+    List<QualityAttachmentResponse> getAllAttachments();
+
     QualityAttachmentResponse getAttachmentById(String id);
 
     List<QualityAttachmentResponse> getAttachmentsByQualityControlId(String qualityControlId);

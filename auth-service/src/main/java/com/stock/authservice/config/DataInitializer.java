@@ -30,16 +30,32 @@ public class DataInitializer implements ApplicationRunner {
         initializeAdminUser();
     }
 
+    private static final Object[][] SYSTEM_ROLES = {
+            {"ADMIN",             "Full system access"},
+            {"USER",              "Default user role"},
+            {"MANAGER",           "Broad access except user and permission management"},
+            {"WAREHOUSE_MANAGER", "Full warehouse, inventory and movement control"},
+            {"QUALITY_MANAGER",   "Quality control and quarantine management"},
+            {"SUPERVISOR",        "Supervise operations, approve movements"},
+            {"OPERATOR",          "Day-to-day operational tasks"},
+            {"PROCUREMENT",       "Product and lot creation for purchasing"},
+            {"AUDITOR",           "Read-only audit access"},
+    };
+
     private void initializeRoles() {
-        if (roleRepository.findByName("ADMIN").isEmpty()) {
-            Role adminRole = Role.builder()
-                    .name("ADMIN")
-                    .description("Full system access")
-                    .isSystem(true)
-                    .isActive(true)
-                    .build();
-            roleRepository.save(adminRole);
-            log.info("ADMIN role created");
+        for (Object[] roleData : SYSTEM_ROLES) {
+            String name = (String) roleData[0];
+            String description = (String) roleData[1];
+            if (roleRepository.findByName(name).isEmpty()) {
+                Role role = Role.builder()
+                        .name(name)
+                        .description(description)
+                        .isSystem(true)
+                        .isActive(true)
+                        .build();
+                roleRepository.save(role);
+                log.info("Role created: {}", name);
+            }
         }
     }
 

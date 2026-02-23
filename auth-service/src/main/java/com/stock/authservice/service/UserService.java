@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +44,32 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserEventPublisher userEventPublisher;
     private final SecurityContextHelper securityContextHelper;
+    private final EmailService emailService;
+
+    // Secure password generator
+    private static final String PASSWORD_CHARS =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    private String generateSecurePassword() {
+        StringBuilder sb = new StringBuilder(12);
+        // Guarantee at least one of each required character type
+        sb.append((char) PASSWORD_CHARS.charAt(SECURE_RANDOM.nextInt(26)));               // uppercase
+        sb.append((char) PASSWORD_CHARS.charAt(26 + SECURE_RANDOM.nextInt(26)));          // lowercase
+        sb.append((char) PASSWORD_CHARS.charAt(52 + SECURE_RANDOM.nextInt(10)));          // digit
+        sb.append((char) PASSWORD_CHARS.charAt(62 + SECURE_RANDOM.nextInt(8)));           // special
+        // Fill remaining 8 characters
+        for (int i = 0; i < 8; i++) {
+            sb.append(PASSWORD_CHARS.charAt(SECURE_RANDOM.nextInt(PASSWORD_CHARS.length())));
+        }
+        // Shuffle the result so required chars are not always at the start
+        char[] arr = sb.toString().toCharArray();
+        for (int i = arr.length - 1; i > 0; i--) {
+            int j = SECURE_RANDOM.nextInt(i + 1);
+            char tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+        }
+        return new String(arr);
+    }
 
     // ==================== CREATE USER ====================
 
@@ -50,40 +77,102 @@ public class UserService {
     public ApiResponse<UserResponse> createUser(UserCreateRequest request) {
         log.info("Creating user: {}", request.getUsername());
 
-        // Check if username exists
-        if (userRepository.existsByUsername(request.getUsername())) {
+        // Check if username exists among non-deleted users only
+        if (userRepository.existsByUsernameAndDeletedAtIsNull(request.getUsername())) {
             throw new DuplicateResourceException("User", "username", request.getUsername());
         }
 
-        // Check if email exists
-        if (userRepository.existsByEmail(request.getEmail())) {
+        // Check if email exists among non-deleted users only
+        if (userRepository.existsByEmailAndDeletedAtIsNull(request.getEmail())) {
             throw new DuplicateResourceException("User", "email", request.getEmail());
         }
 
-        // Create user
-        User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .phoneNumber(request.getPhoneNumber())
-                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
-                .isEmailVerified(false)
-                .isPhoneVerified(false)
-                .mfaEnabled(false)
-                .failedLoginAttempts(0)
-                .build();
+        // Auto-generate password if not provided
+        String rawPassword = (request.getPassword() != null && !request.getPassword().isBlank())
+                ? request.getPassword()
+                : generateSecurePassword();
 
-        // Assign roles
+        // If a soft-deleted user with this username or email exists, restore it instead of inserting a new row
+        // (the DB has a unique constraint so a second INSERT would fail)
+        User user = userRepository.findByUsernameAndDeletedAtIsNotNull(request.getUsername())
+                .or(() -> userRepository.findByEmailAndDeletedAtIsNotNull(request.getEmail()))
+                .orElse(null);
+
+        if (user != null) {
+            // Restore the soft-deleted record with the new details
+            user.setUsername(request.getUsername());
+            user.setEmail(request.getEmail());
+            user.setPasswordHash(passwordEncoder.encode(rawPassword));
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            user.setPhoneNumber(request.getPhoneNumber());
+            user.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+            user.setIsEmailVerified(true);
+            user.setIsLocked(false);
+            user.setFailedLoginAttempts(0);
+            user.setDeletedAt(null);  // un-soft-delete
+            user.setLockedUntil(null);
+        } else {
+            user = User.builder()
+                    .username(request.getUsername())
+                    .email(request.getEmail())
+                    .passwordHash(passwordEncoder.encode(rawPassword))
+                    .firstName(request.getFirstName())
+                    .lastName(request.getLastName())
+                    .phoneNumber(request.getPhoneNumber())
+                    .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+                    .isEmailVerified(true)  // Admin-created accounts are pre-verified
+                    .isPhoneVerified(false)
+                    .mfaEnabled(false)
+                    .failedLoginAttempts(0)
+                    .build();
+        }
+
+        // Assign roles — prefer roleIds (UUIDs), fall back to role names, then default USER role
         if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
             Set<Role> roles = new HashSet<>(roleRepository.findAllById(request.getRoleIds()));
-            user.setRoles(roles);
+            if (!roles.isEmpty()) {
+                user.setRoles(roles);
+            } else {
+                assignDefaultRole(user);
+            }
+        } else if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            // Resolve by role name (e.g. "ADMIN", "MANAGER")
+            Set<Role> roles = new HashSet<>();
+            for (String roleName : request.getRoles()) {
+                // Normalise: strip ROLE_ prefix if frontend sent it, uppercase
+                String normalised = roleName.toUpperCase().replaceAll("^ROLE_", "");
+                roleRepository.findByName(normalised).ifPresent(roles::add);
+            }
+            if (!roles.isEmpty()) {
+                user.setRoles(roles);
+            } else {
+                assignDefaultRole(user);
+            }
         } else {
             assignDefaultRole(user);
         }
 
         user = userRepository.save(user);
+
+        // Determine assigned role name for the email (first role, fallback to "USER")
+        String roleName = user.getRoles().stream()
+                .map(Role::getName)
+                .findFirst()
+                .orElse("USER");
+
+        // Send account-created email with credentials (non-blocking: log errors, don't fail transaction)
+        try {
+            emailService.sendAccountCreatedEmail(
+                    user.getEmail(),
+                    user.getUsername(),
+                    user.getFirstName(),
+                    rawPassword,
+                    roleName
+            );
+        } catch (Exception ex) {
+            log.error("Failed to send account-created email to {}: {}", user.getEmail(), ex.getMessage(), ex);
+        }
 
         // Publish event
         userEventPublisher.publishUserCreated(UserCreatedEvent.builder()
@@ -132,7 +221,7 @@ public class UserService {
                 Sort.Direction.ASC : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        Page<User> userPage = userRepository.findAll(pageable);
+        Page<User> userPage = userRepository.findByDeletedAtIsNull(pageable);
 
         List<UserResponse> content = userPage.getContent().stream()
                 .map(this::mapToUserResponse)
@@ -181,7 +270,7 @@ public class UserService {
 
         // Update email if changed
         if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
-            if (userRepository.existsByEmail(request.getEmail())) {
+            if (userRepository.existsByEmailAndDeletedAtIsNull(request.getEmail())) {
                 throw new DuplicateResourceException("User", "email", request.getEmail());
             }
             user.setEmail(request.getEmail());

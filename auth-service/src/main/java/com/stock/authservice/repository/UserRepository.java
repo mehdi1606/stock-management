@@ -1,6 +1,8 @@
 package com.stock.authservice.repository;
 
 import com.stock.authservice.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,6 +25,11 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     Boolean existsByEmail(String email);
 
+    /** Check duplicate only among non-deleted users */
+    Boolean existsByUsernameAndDeletedAtIsNull(String username);
+
+    Boolean existsByEmailAndDeletedAtIsNull(String email);
+
     List<User> findByIsActive(Boolean isActive);
 
     List<User> findByIsLocked(Boolean isLocked);
@@ -44,4 +51,13 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.isLocked = true")
     Long countLockedUsers();
+
+    /** Returns only non-soft-deleted users (deletedAt IS NULL). */
+    Page<User> findByDeletedAtIsNull(Pageable pageable);
+
+    /** Find a soft-deleted user by username (to restore instead of re-inserting). */
+    Optional<User> findByUsernameAndDeletedAtIsNotNull(String username);
+
+    /** Find a soft-deleted user by email (to restore instead of re-inserting). */
+    Optional<User> findByEmailAndDeletedAtIsNotNull(String email);
 }
