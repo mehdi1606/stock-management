@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
-   3-STYLE DESIGN SYSTEM — CSS Variables per theme
-   Themes: light (Neumorphism) | dark | glass (Glassmorphism)
+   2-STYLE DESIGN SYSTEM — CSS Variables per theme
+   Themes: light (Neumorphism) | dark
 ═══════════════════════════════════════════════════════════════ */
 
 /* ─── Light / Neumorphism (default) ─────────────────────────── */
@@ -44,24 +44,6 @@
   --theme-text-muted: #8b8ca8;
 }
 
-/* ─── Glassmorphism theme ────────────────────────────────────── */
-[data-theme="glass"] {
-  --theme-bg: linear-gradient(135deg, #00c6ff 0%, #7f00ff 55%, #a1c4fd 100%);
-  --theme-surface: rgba(255, 255, 255, 0.11);
-  --theme-surface-alt: rgba(255, 255, 255, 0.18);
-  --theme-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  --theme-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-  --theme-shadow-inset: inset 0 2px 12px rgba(0, 0, 0, 0.15);
-  --theme-border: 1px solid rgba(255, 255, 255, 0.25);
-  --theme-border-line: rgba(255, 255, 255, 0.22);
-  --theme-radius: 1.25rem;
-  --theme-header: rgba(0, 0, 0, 0.14);
-  --theme-sidebar: rgba(0, 0, 0, 0.18);
-  --theme-input: rgba(255, 255, 255, 0.15);
-  --theme-text: #ffffff;
-  --theme-text-muted: rgba(255, 255, 255, 0.72);
-}
-
 /* ─── Header ─────────────────────────────────────────────────── */
 [data-theme="light"] header.fixed,
 [data-theme="dark"] header.fixed {
@@ -69,25 +51,10 @@
   border-bottom-color: var(--theme-border-line) !important;
 }
 
-[data-theme="glass"] header.fixed {
-  background: var(--theme-header) !important;
-  backdrop-filter: blur(28px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-  border-bottom-color: var(--theme-border-line) !important;
-}
-
 /* ─── Sidebar ────────────────────────────────────────────────── */
 [data-theme="light"] aside.fixed,
 [data-theme="dark"] aside.fixed {
   background: var(--theme-sidebar) !important;
-  border-right-color: var(--theme-border-line) !important;
-}
-
-[data-theme="glass"] aside.fixed,
-[data-theme="glass"] aside {
-  background: var(--theme-sidebar) !important;
-  backdrop-filter: blur(28px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
   border-right-color: var(--theme-border-line) !important;
 }
 
@@ -119,66 +86,6 @@
 [data-theme="dark"] .rounded-2xl.bg-white:hover,
 [data-theme="dark"] .overflow-hidden.rounded-2xl.bg-white:hover {
   box-shadow: var(--theme-shadow-hover) !important;
-}
-
-/* ─── Card surfaces: Glassmorphism ───────────────────────────── */
-[data-theme="glass"] .rounded-2xl.bg-white,
-[data-theme="glass"] .overflow-hidden.rounded-2xl.bg-white,
-[data-theme="glass"] .bg-white.rounded-2xl {
-  background: var(--theme-surface) !important;
-  backdrop-filter: blur(20px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-  border: var(--theme-border) !important;
-  box-shadow: var(--theme-shadow) !important;
-  transition: background 0.3s ease, box-shadow 0.3s ease !important;
-}
-
-[data-theme="glass"] .rounded-2xl.bg-white:hover,
-[data-theme="glass"] .overflow-hidden.rounded-2xl.bg-white:hover,
-[data-theme="glass"] .bg-white.rounded-2xl:hover {
-  background: var(--theme-surface-alt) !important;
-  box-shadow: var(--theme-shadow-hover) !important;
-}
-
-/* ─── Glass: Text overrides ──────────────────────────────────── */
-[data-theme="glass"] .text-neutral-900,
-[data-theme="glass"] .text-neutral-800 {
-  color: rgba(255, 255, 255, 0.97) !important;
-}
-[data-theme="glass"] .text-neutral-700,
-[data-theme="glass"] .text-neutral-600 {
-  color: rgba(255, 255, 255, 0.82) !important;
-}
-[data-theme="glass"] .text-neutral-500,
-[data-theme="glass"] .text-neutral-400 {
-  color: rgba(255, 255, 255, 0.62) !important;
-}
-[data-theme="glass"] .text-neutral-300 {
-  color: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* ─── Glass: Border overrides ────────────────────────────────── */
-[data-theme="glass"] .border-neutral-100,
-[data-theme="glass"] .border-neutral-200,
-[data-theme="glass"] [class*="border-neutral"] {
-  border-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-/* ─── Glass: Inner surface overrides ─────────────────────────── */
-[data-theme="glass"] .bg-neutral-50,
-[data-theme="glass"] .bg-neutral-100 {
-  background: rgba(255, 255, 255, 0.12) !important;
-}
-[data-theme="glass"] .hover\:bg-neutral-50:hover,
-[data-theme="glass"] .hover\:bg-neutral-100\/80:hover,
-[data-theme="glass"] .dark\:hover\:bg-neutral-700\/40:hover {
-  background: rgba(255, 255, 255, 0.22) !important;
-}
-
-/* ─── Glass: Input fields ────────────────────────────────────── */
-[data-theme="glass"] .bg-neutral-100.rounded-xl,
-[data-theme="glass"] .bg-neutral-800.rounded-xl {
-  background: rgba(255, 255, 255, 0.14) !important;
 }
 
 /* ─── Neumorphism: Inner surfaces ────────────────────────────── */

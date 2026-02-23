@@ -109,6 +109,8 @@ function resolveTheme(theme: GeneralSettings['theme']): 'dark' | 'light' {
 
 function applyTheme(resolved: 'dark' | 'light') {
   const html = document.documentElement;
+  // Set data-theme so ThemeContext's event handler reads the correct value
+  html.setAttribute('data-theme', resolved);
   if (resolved === 'dark') {
     html.classList.add('dark');
     document.body.classList.add('dark');

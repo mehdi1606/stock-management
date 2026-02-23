@@ -1,18 +1,17 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-export type ThemeMode = 'light' | 'dark' | 'glass';
+export type ThemeMode = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: ThemeMode;
   isDark: boolean;
-  isGlass: boolean;
   toggleTheme: () => void;
   setTheme: (t: ThemeMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'glass'];
+const THEME_CYCLE: ThemeMode[] = ['light', 'dark'];
 
 function applyTheme(theme: ThemeMode) {
   const root = document.documentElement;
@@ -31,7 +30,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       if (raw) {
         const s = JSON.parse(raw);
         if (s.theme === 'dark') return 'dark';
-        if (s.theme === 'glass') return 'glass';
         if (s.theme === 'light') return 'light';
         if (s.theme === 'system') {
           return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -77,7 +75,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     <ThemeContext.Provider value={{
       theme,
       isDark: theme === 'dark',
-      isGlass: theme === 'glass',
       toggleTheme,
       setTheme,
     }}>

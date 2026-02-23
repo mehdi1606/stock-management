@@ -389,7 +389,7 @@ export const ProfilePage: React.FC = () => {
                 {fullName}
               </h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="text-sm text-neutral-500 dark:text-neutral-400">@{user.username}</span>
+                <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{user.username}</span>
                 {userRoles.length > 0 && (
                   <span className={cn(
                     'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r',
@@ -399,7 +399,7 @@ export const ProfilePage: React.FC = () => {
                     {userRoles.map(r => formatRole(r)).join(' · ')}
                   </span>
                 )}
-                {user.status === 'ACTIVE' ? (
+                {(user.isActive === true || user.status === 'ACTIVE') ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     Active
@@ -436,9 +436,9 @@ export const ProfilePage: React.FC = () => {
             />
             <StatCard
               label="Status"
-              value={user.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+              value={(user.isActive === true || user.status === 'ACTIVE') ? 'Active' : 'Inactive'}
               icon={Activity}
-              color={user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-red-500'}
+              color={(user.isActive === true || user.status === 'ACTIVE') ? 'bg-emerald-500' : 'bg-red-500'}
             />
           </div>
         </div>
@@ -563,18 +563,18 @@ export const ProfilePage: React.FC = () => {
               Account Status
             </p>
             <div className="flex items-center gap-2">
-              {user.status === 'ACTIVE' ? (
+              {(user.isActive === true || user.status === 'ACTIVE') ? (
                 <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
               ) : (
                 <XCircle className="w-5 h-5 text-red-500 shrink-0" />
               )}
               <span className={cn(
                 'text-sm font-semibold',
-                user.status === 'ACTIVE'
+                (user.isActive === true || user.status === 'ACTIVE')
                   ? 'text-emerald-700 dark:text-emerald-400'
                   : 'text-red-700 dark:text-red-400',
               )}>
-                {user.status === 'ACTIVE' ? 'Account Active' : 'Account Inactive'}
+                {(user.isActive === true || user.status === 'ACTIVE') ? 'Account Active' : 'Account Inactive'}
               </span>
             </div>
           </div>

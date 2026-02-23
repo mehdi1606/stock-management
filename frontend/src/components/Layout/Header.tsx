@@ -15,7 +15,6 @@ import {
   Package,
   Sparkles,
   Moon,
-  Sun,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ROUTES } from '@/config/constants';
@@ -29,12 +28,10 @@ interface HeaderProps {
 const THEME_LABELS = {
   light: 'Neumorphism',
   dark: 'Dark Mode',
-  glass: 'Glassmorphism',
 };
 const THEME_NEXT: Record<string, string> = {
   light: 'dark',
-  dark: 'glass',
-  glass: 'light',
+  dark: 'light',
 };
 
 export const Header = ({ onMenuClick }: HeaderProps) => {
@@ -159,7 +156,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             <span>Quick Add</span>
           </motion.button>
 
-          {/* Theme Toggle — cycles light → dark → glass */}
+          {/* Theme Toggle — cycles light ↔ dark */}
           <motion.button
             whileHover={{ scale: 1.1, rotate: 20 }}
             whileTap={{ scale: 0.9 }}
@@ -169,7 +166,6 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           >
             {theme === 'light' && <Moon className="w-5 h-5 text-neutral-600" />}
             {theme === 'dark' && <Sparkles className="w-5 h-5 text-indigo-400" />}
-            {theme === 'glass' && <Sun className="w-5 h-5 text-amber-300" />}
             <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold bg-neutral-900 text-white px-2 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
               → {THEME_LABELS[THEME_NEXT[theme] as keyof typeof THEME_LABELS]}
             </span>
