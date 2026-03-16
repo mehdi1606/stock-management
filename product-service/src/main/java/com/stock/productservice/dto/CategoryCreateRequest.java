@@ -21,7 +21,6 @@ public class CategoryCreateRequest {
 
     private Integer displayOrder;
 
-    // JSON string defining attribute schemas for this category
-    // Example: {"attributeSchemas": [{"name": "color", "type": "string", "required": true}]}
+
     private String attributeSchemas;
 }

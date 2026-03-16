@@ -5,6 +5,7 @@ import { qualityService } from '@/services/quality.service';
 import { QualityControl, QualityAttachment } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { toast } from 'react-hot-toast';
+import { confirmWarning } from '@/utils/confirmDialog';
 import { format } from 'date-fns';
 
 interface QualityControlDetailModalProps {
@@ -70,7 +71,8 @@ export const QualityControlDetailModal: React.FC<QualityControlDetailModalProps>
   };
 
   const handleUpdateStatus = async (newStatus: string) => {
-    if (!window.confirm(`Are you sure you want to update status to ${newStatus}?`)) return;
+    const ok = await confirmWarning('Update Status', `Change status to ${newStatus}?`, 'Update');
+    if (!ok) return;
 
     setLoading(true);
     try {

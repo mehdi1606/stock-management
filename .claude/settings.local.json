@@ -87,7 +87,8 @@
       "Bash(winget list:*)",
       "Bash(ls:*)",
       "Bash(xargs:*)",
-      "Bash(__NEW_LINE_7ba61949142ad6cc__ echo \"=== Quality Controls ===\")"
+      "Bash(__NEW_LINE_7ba61949142ad6cc__ echo \"=== Quality Controls ===\")",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

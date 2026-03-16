@@ -4,6 +4,7 @@ import { MovementTask, TaskStatus, TaskType } from '../../types';
 import { movementService } from '../../services/movement.service';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import { promptInput, confirmAction } from '@/utils/confirmDialog';
 
 interface MovementTaskCardProps {
   task: MovementTask;
@@ -41,7 +42,7 @@ const MovementTaskCard: React.FC<MovementTaskCardProps> = ({ task, onUpdate }) =
   };
 
   const handleAssign = async () => {
-    const userId = window.prompt('Enter User ID to assign this task to:');
+    const userId = await promptInput('Assign Task', 'User ID to assign this task to', 'e.g. usr-abc12345…');
     if (!userId) return;
 
     try {
@@ -86,7 +87,7 @@ const MovementTaskCard: React.FC<MovementTaskCardProps> = ({ task, onUpdate }) =
   };
 
   const handleCancel = async () => {
-    const reason = window.prompt('Please provide a reason for cancelling this task:');
+    const reason = await promptInput('Cancel Task', 'Reason for cancellation', 'e.g. No longer needed…');
     if (!reason) return;
 
     try {

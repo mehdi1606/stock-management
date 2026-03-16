@@ -46,6 +46,7 @@ import {
   type Permission,
 } from '@/config/permissions';
 import toast from 'react-hot-toast';
+import { confirmWarning, confirmDelete } from '@/utils/confirmDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/services/api';
 import { API_ENDPOINTS } from '@/config/constants';
@@ -599,8 +600,9 @@ const GeneralSettingsTab: React.FC = () => {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleReset = () => {
-    if (!window.confirm('Reset all settings to defaults?')) return;
+  const handleReset = async () => {
+    const ok = await confirmWarning('Reset Settings', 'All settings will be restored to defaults. This cannot be undone.');
+    if (!ok) return;
     resetSettings();
     setLocalSettings({ ...DEFAULT_SETTINGS });
     toast.success('Settings reset to defaults');
@@ -647,7 +649,8 @@ const GeneralSettingsTab: React.FC = () => {
 
   // Revoke all sessions
   const handleRevokeAllSessions = async () => {
-    if (!window.confirm('This will log you out of all devices including this one. Continue?')) return;
+    const ok = await confirmDelete('Revoke All Sessions', 'You will be logged out of all devices including this one.', 'Revoke');
+    if (!ok) return;
     try {
       await safe(() => apiClient.post(API_ENDPOINTS.AUTH.LOGOUT));
     } catch {}
