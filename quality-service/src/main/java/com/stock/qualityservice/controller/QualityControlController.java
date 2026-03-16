@@ -39,7 +39,7 @@ public class QualityControlController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quality control by ID")
     public ResponseEntity<QualityControlResponse> getQualityControlById(@PathVariable String id) {
         log.info("Fetching quality control with ID: {}", id);
@@ -48,7 +48,7 @@ public class QualityControlController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get all quality controls", description = "Get paginated list of quality controls")
     public ResponseEntity<Page<QualityControlResponse>> getAllQualityControls(Pageable pageable) {
         log.info("Fetching all quality controls with pagination");
@@ -57,7 +57,7 @@ public class QualityControlController {
     }
 
     @GetMapping("/product/{productId}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quality controls by product ID")
     public ResponseEntity<List<QualityControlResponse>> getQualityControlsByProductId(
             @PathVariable String productId) {
@@ -67,7 +67,7 @@ public class QualityControlController {
     }
 
     @GetMapping("/batch/{batchNumber}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quality controls by batch number")
     public ResponseEntity<List<QualityControlResponse>> getQualityControlsByBatchNumber(
             @PathVariable String batchNumber) {
@@ -77,7 +77,7 @@ public class QualityControlController {
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quality controls by status")
     public ResponseEntity<Page<QualityControlResponse>> getQualityControlsByStatus(
             @PathVariable String status, Pageable pageable) {

@@ -90,6 +90,38 @@ public class EmailService {
     }
 
     /**
+     * Send account-created email with username, generated password and role
+     * Called by UserService after admin creates a new user account.
+     */
+    public void sendAccountCreatedEmail(String email, String username, String firstName,
+                                        String rawPassword, String role) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Your Account Has Been Created — Stock Management System");
+
+            String htmlContent = loadEmailTemplate("classpath:templates/email-account-created.html");
+            htmlContent = htmlContent.replace("${username}",  username);
+            htmlContent = htmlContent.replace("${firstName}", firstName != null ? firstName : username);
+            htmlContent = htmlContent.replace("${email}",     email);
+            htmlContent = htmlContent.replace("${password}",  rawPassword);
+            htmlContent = htmlContent.replace("${role}",      role.replace("_", " "));
+            htmlContent = htmlContent.replace("${loginUrl}",  frontendUrl + "/login");
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+
+            log.info("Account-created email sent to: {}", email);
+        } catch (MessagingException | IOException e) {
+            log.error("Failed to send account-created email to: {}", email, e);
+            throw new RuntimeException("Failed to send account-created email", e);
+        }
+    }
+
+    /**
      * Send password reset email
      */
     public void sendPasswordResetEmail(String email, String token) {

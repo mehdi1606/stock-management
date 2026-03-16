@@ -48,8 +48,17 @@ public class QualityAttachmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR', 'OPERATOR')")
+    @Operation(summary = "Get all attachments")
+    public ResponseEntity<List<QualityAttachmentResponse>> getAllAttachments() {
+        log.info("Fetching all attachments");
+        List<QualityAttachmentResponse> response = attachmentService.getAllAttachments();
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR', 'OPERATOR')")
     @Operation(summary = "Get attachment by ID")
     public ResponseEntity<QualityAttachmentResponse> getAttachmentById(@PathVariable String id) {
         log.info("Fetching attachment with ID: {}", id);
@@ -58,7 +67,7 @@ public class QualityAttachmentController {
     }
 
     @GetMapping("/quality-control/{qualityControlId}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR', 'OPERATOR')")
     @Operation(summary = "Get attachments by quality control ID")
     public ResponseEntity<List<QualityAttachmentResponse>> getAttachmentsByQualityControlId(
             @PathVariable String qualityControlId) {
@@ -68,7 +77,7 @@ public class QualityAttachmentController {
     }
 
     @GetMapping("/quarantine/{quarantineId}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR', 'OPERATOR')")
     @Operation(summary = "Get attachments by quarantine ID")
     public ResponseEntity<List<QualityAttachmentResponse>> getAttachmentsByQuarantineId(
             @PathVariable String quarantineId) {
@@ -78,7 +87,7 @@ public class QualityAttachmentController {
     }
 
     @GetMapping("/type/{attachmentType}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR', 'OPERATOR')")
     @Operation(summary = "Get attachments by type")
     public ResponseEntity<List<QualityAttachmentResponse>> getAttachmentsByType(
             @PathVariable String attachmentType) {

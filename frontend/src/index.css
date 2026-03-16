@@ -2,6 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════
+   2-STYLE DESIGN SYSTEM — CSS Variables per theme
+   Themes: light (Neumorphism) | dark
+═══════════════════════════════════════════════════════════════ */
+
+/* ─── Light / Neumorphism (default) ─────────────────────────── */
+:root,
+[data-theme="light"] {
+  --theme-bg: linear-gradient(135deg, #dff0ed 0%, #e8e3f5 50%, #dff0ed 100%);
+  --theme-surface: #e8ecf1;
+  --theme-surface-alt: #dde1ea;
+  --theme-shadow: 8px 8px 20px rgba(163, 177, 198, 0.55), -8px -8px 20px rgba(255, 255, 255, 0.9);
+  --theme-shadow-hover: 10px 10px 26px rgba(163, 177, 198, 0.65), -10px -10px 26px rgba(255, 255, 255, 0.95);
+  --theme-shadow-inset: inset 5px 5px 12px rgba(163, 177, 198, 0.4), inset -5px -5px 12px rgba(255, 255, 255, 0.75);
+  --theme-border: none;
+  --theme-border-line: rgba(163, 177, 198, 0.35);
+  --theme-radius: 1.5rem;
+  --theme-header: rgba(236, 240, 246, 0.88);
+  --theme-sidebar: rgba(236, 240, 246, 0.96);
+  --theme-input: rgba(255, 255, 255, 0.65);
+  --theme-text: #2d3748;
+  --theme-text-muted: #64748b;
+}
+
+/* ─── Dark theme ─────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --theme-bg: linear-gradient(135deg, #0f2027 0%, #203a43 45%, #2c2c54 100%);
+  --theme-surface: rgba(26, 26, 48, 0.97);
+  --theme-surface-alt: rgba(34, 34, 60, 0.97);
+  --theme-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --theme-shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 24px rgba(99, 102, 241, 0.18);
+  --theme-shadow-inset: inset 0 2px 8px rgba(0, 0, 0, 0.45);
+  --theme-border: 1px solid rgba(255, 255, 255, 0.07);
+  --theme-border-line: rgba(255, 255, 255, 0.08);
+  --theme-radius: 1.25rem;
+  --theme-header: rgba(10, 14, 35, 0.92);
+  --theme-sidebar: rgba(8, 12, 30, 0.97);
+  --theme-input: rgba(255, 255, 255, 0.07);
+  --theme-text: #e8e8ff;
+  --theme-text-muted: #8b8ca8;
+}
+
+/* ─── Header ─────────────────────────────────────────────────── */
+[data-theme="light"] header.fixed,
+[data-theme="dark"] header.fixed {
+  background: var(--theme-header) !important;
+  border-bottom-color: var(--theme-border-line) !important;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────── */
+[data-theme="light"] aside.fixed,
+[data-theme="dark"] aside.fixed {
+  background: var(--theme-sidebar) !important;
+  border-right-color: var(--theme-border-line) !important;
+}
+
+/* ─── Card surfaces: Neumorphism ─────────────────────────────── */
+[data-theme="light"] .rounded-2xl.bg-white,
+[data-theme="light"] .overflow-hidden.rounded-2xl.bg-white,
+[data-theme="light"] .bg-white.rounded-2xl {
+  background: var(--theme-surface) !important;
+  box-shadow: var(--theme-shadow) !important;
+  border: none !important;
+  transition: box-shadow 0.3s ease, transform 0.3s ease !important;
+}
+
+[data-theme="light"] .rounded-2xl.bg-white:hover,
+[data-theme="light"] .overflow-hidden.rounded-2xl.bg-white:hover,
+[data-theme="light"] .bg-white.rounded-2xl:hover {
+  box-shadow: var(--theme-shadow-hover) !important;
+}
+
+/* ─── Card surfaces: Dark ────────────────────────────────────── */
+[data-theme="dark"] .rounded-2xl.bg-white,
+[data-theme="dark"] .overflow-hidden.rounded-2xl.bg-white,
+[data-theme="dark"] .bg-white.rounded-2xl {
+  background: var(--theme-surface) !important;
+  box-shadow: var(--theme-shadow) !important;
+  border: var(--theme-border) !important;
+}
+
+[data-theme="dark"] .rounded-2xl.bg-white:hover,
+[data-theme="dark"] .overflow-hidden.rounded-2xl.bg-white:hover {
+  box-shadow: var(--theme-shadow-hover) !important;
+}
+
+/* ─── Neumorphism: Inner surfaces ────────────────────────────── */
+[data-theme="light"] .bg-neutral-50 {
+  background: rgba(225, 230, 240, 0.85) !important;
+}
+[data-theme="light"] .bg-neutral-100 {
+  background: rgba(215, 222, 235, 0.9) !important;
+}
+
+/* ─── Dark: Enhance inner surfaces ──────────────────────────── */
+[data-theme="dark"] .bg-white {
+  background: var(--theme-surface) !important;
+}
+
+/* ─── Theme transition helper ────────────────────────────────── */
+[data-theme] * {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.25s;
+  transition-timing-function: ease;
+}
+
+/* Don't animate on layout elements that cause reflow */
+[data-theme] .backdrop-blur-xl,
+[data-theme] aside,
+[data-theme] header {
+  transition: background 0.4s ease, border-color 0.3s ease;
+}
+
 @layer base {
   :root {
     --primary-50: #E8EBF5;
@@ -15,7 +128,11 @@
   }
 
   body {
-    @apply bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 transition-colors duration-300;
+    @apply text-neutral-900 dark:text-neutral-100;
+    background: var(--theme-bg);
+    background-attachment: fixed;
+    min-height: 100vh;
+    transition: background 0.5s ease, color 0.3s ease;
   }
 }
 

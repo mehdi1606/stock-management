@@ -31,7 +31,7 @@ public class SerialController {
     // ========== CRUD OPERATIONS ==========
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'SUPERVISOR')")
     @Operation(summary = "Create serial", description = "Create a new serial number record")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Serial created successfully"),
@@ -46,7 +46,7 @@ public class SerialController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get serial by ID", description = "Retrieve serial details by ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Serial found"),
@@ -62,7 +62,7 @@ public class SerialController {
     }
 
     @GetMapping("/code/{code}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get serial by code", description = "Retrieve serial by business code")
     public ResponseEntity<SerialDTO> getSerialByCode(@PathVariable String code) {
         log.info("REST request to get serial by code: {}", code);
@@ -72,7 +72,7 @@ public class SerialController {
     }
 
     @GetMapping("/number/{serialNumber}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get serial by serial number", description = "Retrieve serial by serial number")
     public ResponseEntity<SerialDTO> getSerialBySerialNumber(@PathVariable String serialNumber) {
         log.info("REST request to get serial by serial number: {}", serialNumber);
@@ -82,7 +82,7 @@ public class SerialController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get all serials", description = "Retrieve all serial number records")
     @ApiResponse(responseCode = "200", description = "List of serials retrieved")
     public ResponseEntity<List<SerialDTO>> getAllSerials() {
@@ -93,7 +93,7 @@ public class SerialController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER')")
     @Operation(summary = "Update serial", description = "Update an existing serial record")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Serial updated successfully"),
@@ -109,7 +109,7 @@ public class SerialController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER')")
     @Operation(summary = "Update serial status", description = "Update only the status of a serial")
     @ApiResponse(responseCode = "200", description = "Serial status updated successfully")
     public ResponseEntity<SerialDTO> updateSerialStatus(
@@ -123,7 +123,7 @@ public class SerialController {
     }
 
     @PatchMapping("/{id}/location")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'OPERATOR')")
     @Operation(summary = "Update serial location", description = "Update the location of a serial")
     @ApiResponse(responseCode = "200", description = "Serial location updated successfully")
     public ResponseEntity<SerialDTO> updateSerialLocation(
@@ -153,7 +153,7 @@ public class SerialController {
     // ========== QUERY OPERATIONS ==========
 
     @GetMapping("/item/{itemId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get serials by item", description = "Retrieve all serials for a specific item")
     public ResponseEntity<List<SerialDTO>> getSerialsByItem(@PathVariable String itemId) {
         log.info("REST request to get serials for item: {}", itemId);
@@ -163,7 +163,7 @@ public class SerialController {
     }
 
     @GetMapping("/lot/{lotId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get serials by lot", description = "Retrieve all serials for a specific lot")
     public ResponseEntity<List<SerialDTO>> getSerialsByLot(@PathVariable String lotId) {
         log.info("REST request to get serials for lot: {}", lotId);
@@ -173,7 +173,7 @@ public class SerialController {
     }
 
     @GetMapping("/location/{locationId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get serials by location", description = "Retrieve all serials at a specific location")
     public ResponseEntity<List<SerialDTO>> getSerialsByLocation(@PathVariable String locationId) {
         log.info("REST request to get serials for location: {}", locationId);
@@ -183,7 +183,7 @@ public class SerialController {
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get serials by status", description = "Retrieve serials by status")
     public ResponseEntity<List<SerialDTO>> getSerialsByStatus(
             @Parameter(description = "Serial status")
@@ -195,7 +195,7 @@ public class SerialController {
     }
 
     @GetMapping("/item/{itemId}/status/{status}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get serials by item and status", description = "Retrieve serials for an item with specific status")
     public ResponseEntity<List<SerialDTO>> getSerialsByItemAndStatus(
             @PathVariable String itemId,
@@ -207,7 +207,7 @@ public class SerialController {
     }
 
     @GetMapping("/item/{itemId}/available")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get available serials for item", description = "Retrieve available (IN_STOCK) serials for an item")
     public ResponseEntity<List<SerialDTO>> getAvailableSerials(@PathVariable String itemId) {
         log.info("REST request to get available serials for item: {}", itemId);
@@ -219,7 +219,7 @@ public class SerialController {
     // ========== UTILITY OPERATIONS ==========
 
     @GetMapping("/lot/{lotId}/count")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Count serials by lot", description = "Get total number of serials for a lot")
     public ResponseEntity<Long> countSerialsByLot(@PathVariable String lotId) {
         log.info("REST request to count serials for lot: {}", lotId);
@@ -229,7 +229,7 @@ public class SerialController {
     }
 
     @GetMapping("/item/{itemId}/count")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Count serials by item", description = "Get total number of serials for an item")
     public ResponseEntity<Long> countSerialsByItem(@PathVariable String itemId) {
         log.info("REST request to count serials for item: {}", itemId);
@@ -239,7 +239,7 @@ public class SerialController {
     }
 
     @GetMapping("/number/{serialNumber}/available")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Check if serial is available", description = "Check if a serial number is available (IN_STOCK)")
     public ResponseEntity<Boolean> isSerialAvailable(@PathVariable String serialNumber) {
         log.info("REST request to check availability of serial: {}", serialNumber);

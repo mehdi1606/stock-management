@@ -33,7 +33,7 @@ public class LotController {
     // ========== CRUD OPERATIONS ==========
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'SUPERVISOR', 'PROCUREMENT')")
     @Operation(summary = "Create lot", description = "Create a new lot/batch record")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Lot created successfully"),
@@ -48,7 +48,7 @@ public class LotController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get lot by ID", description = "Retrieve lot details by ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lot found"),
@@ -64,7 +64,7 @@ public class LotController {
     }
 
     @GetMapping("/code/{code}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get lot by code", description = "Retrieve lot by business code")
     public ResponseEntity<LotDTO> getLotByCode(@PathVariable String code) {
         log.info("REST request to get lot by code: {}", code);
@@ -74,7 +74,7 @@ public class LotController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get all lots", description = "Retrieve all lot records")
     @ApiResponse(responseCode = "200", description = "List of lots retrieved")
     public ResponseEntity<List<LotDTO>> getAllLots() {
@@ -85,7 +85,7 @@ public class LotController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER')")
     @Operation(summary = "Update lot", description = "Update an existing lot record")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lot updated successfully"),
@@ -101,7 +101,7 @@ public class LotController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER')")
     @Operation(summary = "Update lot status", description = "Update only the status of a lot")
     @ApiResponse(responseCode = "200", description = "Lot status updated successfully")
     public ResponseEntity<LotDTO> updateLotStatus(
@@ -131,7 +131,7 @@ public class LotController {
     // ========== QUERY OPERATIONS ==========
 
     @GetMapping("/item/{itemId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get lots by item", description = "Retrieve all lots for a specific item")
     public ResponseEntity<List<LotDTO>> getLotsByItem(@PathVariable String itemId) {
         log.info("REST request to get lots for item: {}", itemId);
@@ -141,7 +141,7 @@ public class LotController {
     }
 
     @GetMapping("/supplier/{supplierId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get lots by supplier", description = "Retrieve all lots from a specific supplier")
     public ResponseEntity<List<LotDTO>> getLotsBySupplier(@PathVariable String supplierId) {
         log.info("REST request to get lots for supplier: {}", supplierId);
@@ -151,7 +151,7 @@ public class LotController {
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get lots by status", description = "Retrieve lots by status (ACTIVE, QUARANTINED, etc.)")
     public ResponseEntity<List<LotDTO>> getLotsByStatus(
             @Parameter(description = "Lot status")
@@ -163,7 +163,7 @@ public class LotController {
     }
 
     @GetMapping("/expired")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get expired lots", description = "Retrieve all expired lots")
     @ApiResponse(responseCode = "200", description = "List of expired lots")
     public ResponseEntity<List<LotDTO>> getExpiredLots() {
@@ -174,7 +174,7 @@ public class LotController {
     }
 
     @GetMapping("/expiring")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get lots expiring in date range", description = "Retrieve lots expiring between dates")
     public ResponseEntity<List<LotDTO>> getLotsExpiringBetween(
             @Parameter(description = "Start date (YYYY-MM-DD)")
@@ -188,7 +188,7 @@ public class LotController {
     }
 
     @GetMapping("/item/{itemId}/active")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get active lots for item", description = "Retrieve only active (non-expired) lots for an item")
     public ResponseEntity<List<LotDTO>> getActiveLotsForItem(@PathVariable String itemId) {
         log.info("REST request to get active lots for item: {}", itemId);
@@ -200,7 +200,7 @@ public class LotController {
     // ========== UTILITY OPERATIONS ==========
 
     @GetMapping("/item/{itemId}/count")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Count lots by item", description = "Get total number of lots for an item")
     public ResponseEntity<Long> countLotsByItem(@PathVariable String itemId) {
         log.info("REST request to count lots for item: {}", itemId);
@@ -210,7 +210,7 @@ public class LotController {
     }
 
     @GetMapping("/{lotId}/is-expired")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Check if lot is expired", description = "Check expiry status of a lot")
     public ResponseEntity<Boolean> isLotExpired(@PathVariable String lotId) {
         log.info("REST request to check if lot is expired: {}", lotId);

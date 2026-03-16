@@ -39,7 +39,7 @@ public class QuarantineController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quarantine by ID")
     public ResponseEntity<QuarantineResponse> getQuarantineById(@PathVariable String id) {
         log.info("Fetching quarantine with ID: {}", id);
@@ -48,7 +48,7 @@ public class QuarantineController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get all quarantines")
     public ResponseEntity<Page<QuarantineResponse>> getAllQuarantines(Pageable pageable) {
         log.info("Fetching all quarantines with pagination");
@@ -57,7 +57,7 @@ public class QuarantineController {
     }
 
     @GetMapping("/product/{productId}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quarantines by product ID")
     public ResponseEntity<List<QuarantineResponse>> getQuarantinesByProductId(@PathVariable String productId) {
         log.info("Fetching quarantines for product: {}", productId);
@@ -66,7 +66,7 @@ public class QuarantineController {
     }
 
     @GetMapping("/quality-control/{qualityControlId}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quarantines by quality control ID")
     public ResponseEntity<List<QuarantineResponse>> getQuarantinesByQualityControlId(
             @PathVariable String qualityControlId) {
@@ -76,7 +76,7 @@ public class QuarantineController {
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quarantines by status")
     public ResponseEntity<Page<QuarantineResponse>> getQuarantinesByStatus(
             @PathVariable String status, Pageable pageable) {
@@ -86,7 +86,7 @@ public class QuarantineController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get active quarantines")
     public ResponseEntity<List<QuarantineResponse>> getActiveQuarantines() {
         log.info("Fetching active quarantines");
@@ -95,7 +95,7 @@ public class QuarantineController {
     }
 
     @GetMapping("/location/{locationId}")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quarantines by location")
     public ResponseEntity<List<QuarantineResponse>> getQuarantinesByLocation(@PathVariable String locationId) {
         log.info("Fetching quarantines for location: {}", locationId);
@@ -104,7 +104,7 @@ public class QuarantineController {
     }
 
     @GetMapping("/expiring-soon")
-    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'AUDITOR')")
     @Operation(summary = "Get quarantines expiring soon")
     public ResponseEntity<List<QuarantineResponse>> getQuarantinesExpiringSoon(@RequestParam int days) {
         log.info("Fetching quarantines expiring within {} days", days);

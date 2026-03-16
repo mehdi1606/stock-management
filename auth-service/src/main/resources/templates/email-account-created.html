@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Account Has Been Created</title>
+</head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f0f4f8;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+    <tr>
+        <td align="center">
+
+            <!-- ═══════════════════════════════════════════
+                 MAIN CARD
+            ═══════════════════════════════════════════ -->
+            <table width="600" cellpadding="0" cellspacing="0"
+                   style="background-color:#ffffff;border-radius:20px;
+                          box-shadow:0 8px 40px rgba(0,0,0,0.10);
+                          overflow:hidden;max-width:600px;">
+
+                <!-- ─── HEADER GRADIENT ─── -->
+                <tr>
+                    <td style="background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 50%,#0ea5e9 100%);
+                                padding:48px 40px 40px;text-align:center;">
+
+                        <!-- Logo / Icon -->
+                        <table cellpadding="0" cellspacing="0" align="center">
+                            <tr>
+                                <td align="center"
+                                    style="width:72px;height:72px;
+                                           background:rgba(255,255,255,0.15);
+                                           border-radius:20px;
+                                           border:2px solid rgba(255,255,255,0.3);">
+                                    <span style="font-size:36px;line-height:72px;">📦</span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <h1 style="margin:20px 0 8px;color:#ffffff;font-size:28px;
+                                   font-weight:700;letter-spacing:-0.5px;">
+                            Account Created
+                        </h1>
+                        <p style="margin:0;color:rgba(255,255,255,0.85);font-size:15px;">
+                            Stock Management System
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- ─── GREETING ─── -->
+                <tr>
+                    <td style="padding:40px 40px 0;">
+                        <p style="margin:0 0 8px;color:#111827;font-size:22px;font-weight:600;">
+                            Hello, ${firstName}! 👋
+                        </p>
+                        <p style="margin:0;color:#4b5563;font-size:15px;line-height:1.7;">
+                            An administrator has created an account for you on the
+                            <strong style="color:#1d4ed8;">Stock Management System</strong>.
+                            Your login credentials are below — please keep them safe and
+                            change your password after your first login.
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- ─── CREDENTIALS CARD ─── -->
+                <tr>
+                    <td style="padding:32px 40px 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0"
+                               style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);
+                                      border:1.5px solid #bfdbfe;
+                                      border-radius:16px;overflow:hidden;">
+                            <!-- Header bar -->
+                            <tr>
+                                <td colspan="2"
+                                    style="background:linear-gradient(135deg,#1e3a8a,#2563eb);
+                                           padding:14px 24px;">
+                                    <p style="margin:0;color:#ffffff;font-size:13px;
+                                               font-weight:700;letter-spacing:1px;
+                                               text-transform:uppercase;">
+                                        🔐 Your Login Credentials
+                                    </p>
+                                </td>
+                            </tr>
+
+                            <!-- Username row -->
+                            <tr>
+                                <td style="padding:18px 24px 10px;width:40%;
+                                            border-bottom:1px solid #bfdbfe;">
+                                    <p style="margin:0;color:#6b7280;font-size:12px;
+                                               font-weight:600;text-transform:uppercase;
+                                               letter-spacing:0.8px;">
+                                        Username
+                                    </p>
+                                </td>
+                                <td style="padding:18px 24px 10px;
+                                            border-bottom:1px solid #bfdbfe;">
+                                    <p style="margin:0;color:#1e3a8a;font-size:16px;
+                                               font-weight:700;font-family:monospace;">
+                                        ${username}
+                                    </p>
+                                </td>
+                            </tr>
+
+                            <!-- Email row -->
+                            <tr>
+                                <td style="padding:12px 24px;width:40%;
+                                            border-bottom:1px solid #bfdbfe;">
+                                    <p style="margin:0;color:#6b7280;font-size:12px;
+                                               font-weight:600;text-transform:uppercase;
+                                               letter-spacing:0.8px;">
+                                        Email
+                                    </p>
+                                </td>
+                                <td style="padding:12px 24px;
+                                            border-bottom:1px solid #bfdbfe;">
+                                    <p style="margin:0;color:#1e3a8a;font-size:15px;
+                                               font-weight:600;">
+                                        ${email}
+                                    </p>
+                                </td>
+                            </tr>
+
+                            <!-- Password row -->
+                            <tr>
+                                <td style="padding:12px 24px;width:40%;
+                                            border-bottom:1px solid #bfdbfe;">
+                                    <p style="margin:0;color:#6b7280;font-size:12px;
+                                               font-weight:600;text-transform:uppercase;
+                                               letter-spacing:0.8px;">
+                                        Password
+                                    </p>
+                                </td>
+                                <td style="padding:12px 24px;
+                                            border-bottom:1px solid #bfdbfe;">
+                                    <span style="display:inline-block;
+                                                 background:#1e3a8a;color:#ffffff;
+                                                 font-family:monospace;font-size:18px;
+                                                 font-weight:700;letter-spacing:2px;
+                                                 padding:8px 16px;border-radius:10px;">
+                                        ${password}
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <!-- Role row -->
+                            <tr>
+                                <td style="padding:12px 24px 18px;width:40%;">
+                                    <p style="margin:0;color:#6b7280;font-size:12px;
+                                               font-weight:600;text-transform:uppercase;
+                                               letter-spacing:0.8px;">
+                                        Role
+                                    </p>
+                                </td>
+                                <td style="padding:12px 24px 18px;">
+                                    <span style="display:inline-block;
+                                                 background:#dbeafe;color:#1d4ed8;
+                                                 font-size:13px;font-weight:700;
+                                                 padding:4px 12px;border-radius:20px;
+                                                 border:1px solid #93c5fd;">
+                                        ${role}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- ─── SECURITY WARNING ─── -->
+                <tr>
+                    <td style="padding:24px 40px 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0"
+                               style="background:#fefce8;border-left:4px solid #f59e0b;
+                                      border-radius:0 10px 10px 0;">
+                            <tr>
+                                <td style="padding:16px 20px;">
+                                    <p style="margin:0 0 6px;color:#92400e;font-size:13px;
+                                               font-weight:700;">
+                                        ⚠️ Important Security Notice
+                                    </p>
+                                    <ul style="margin:0;padding-left:18px;
+                                               color:#78350f;font-size:13px;
+                                               line-height:1.8;">
+                                        <li>Change your password immediately after your first login.</li>
+                                        <li>Never share your credentials with anyone.</li>
+                                        <li>This email contains sensitive information — delete it after saving your credentials.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- ─── LOGIN BUTTON ─── -->
+                <tr>
+                    <td align="center" style="padding:36px 40px 0;">
+                        <a href="${loginUrl}"
+                           style="display:inline-block;
+                                  padding:16px 52px;
+                                  background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%);
+                                  color:#ffffff;text-decoration:none;
+                                  border-radius:50px;font-size:16px;font-weight:700;
+                                  letter-spacing:0.3px;
+                                  box-shadow:0 6px 20px rgba(37,99,235,0.45);">
+                            🚀 &nbsp;Log In to Your Account
+                        </a>
+                    </td>
+                </tr>
+
+                <!-- ─── WHAT'S NEXT ─── -->
+                <tr>
+                    <td style="padding:40px 40px 0;">
+                        <h3 style="margin:0 0 20px;color:#111827;font-size:17px;
+                                   font-weight:700;text-align:center;">
+                            Getting Started
+                        </h3>
+
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <!-- Step 1 -->
+                            <tr>
+                                <td style="padding:0 0 16px 0;">
+                                    <table width="100%" cellpadding="0" cellspacing="0"
+                                           style="background:#f8fafc;border-radius:14px;
+                                                  border:1px solid #e2e8f0;">
+                                        <tr>
+                                            <td width="56" valign="middle" style="padding:16px 0 16px 20px;">
+                                                <div style="width:40px;height:40px;
+                                                            background:linear-gradient(135deg,#2563eb,#0ea5e9);
+                                                            border-radius:12px;text-align:center;
+                                                            line-height:40px;font-size:20px;">
+                                                    1️⃣
+                                                </div>
+                                            </td>
+                                            <td valign="middle" style="padding:16px 20px 16px 12px;">
+                                                <p style="margin:0 0 4px;color:#1e293b;font-size:14px;
+                                                           font-weight:700;">Log in with your credentials</p>
+                                                <p style="margin:0;color:#64748b;font-size:13px;line-height:1.5;">
+                                                    Use the username and password above to sign in for the first time.
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            <!-- Step 2 -->
+                            <tr>
+                                <td style="padding:0 0 16px 0;">
+                                    <table width="100%" cellpadding="0" cellspacing="0"
+                                           style="background:#f8fafc;border-radius:14px;
+                                                  border:1px solid #e2e8f0;">
+                                        <tr>
+                                            <td width="56" valign="middle" style="padding:16px 0 16px 20px;">
+                                                <div style="width:40px;height:40px;
+                                                            background:linear-gradient(135deg,#7c3aed,#a855f7);
+                                                            border-radius:12px;text-align:center;
+                                                            line-height:40px;font-size:20px;">
+                                                    2️⃣
+                                                </div>
+                                            </td>
+                                            <td valign="middle" style="padding:16px 20px 16px 12px;">
+                                                <p style="margin:0 0 4px;color:#1e293b;font-size:14px;
+                                                           font-weight:700;">Change your password</p>
+                                                <p style="margin:0;color:#64748b;font-size:13px;line-height:1.5;">
+                                                    Go to Settings → Security and set a strong, personal password.
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            <!-- Step 3 -->
+                            <tr>
+                                <td>
+                                    <table width="100%" cellpadding="0" cellspacing="0"
+                                           style="background:#f8fafc;border-radius:14px;
+                                                  border:1px solid #e2e8f0;">
+                                        <tr>
+                                            <td width="56" valign="middle" style="padding:16px 0 16px 20px;">
+                                                <div style="width:40px;height:40px;
+                                                            background:linear-gradient(135deg,#059669,#10b981);
+                                                            border-radius:12px;text-align:center;
+                                                            line-height:40px;font-size:20px;">
+                                                    3️⃣
+                                                </div>
+                                            </td>
+                                            <td valign="middle" style="padding:16px 20px 16px 12px;">
+                                                <p style="margin:0 0 4px;color:#1e293b;font-size:14px;
+                                                           font-weight:700;">Explore your dashboard</p>
+                                                <p style="margin:0;color:#64748b;font-size:13px;line-height:1.5;">
+                                                    Your role is <strong>${role}</strong>. Discover all the features available to you.
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- ─── SUPPORT ─── -->
+                <tr>
+                    <td style="padding:32px 40px 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0"
+                               style="background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 100%);
+                                      border-radius:14px;">
+                            <tr>
+                                <td style="padding:24px 28px;">
+                                    <p style="margin:0 0 8px;color:#ffffff;font-size:15px;
+                                               font-weight:700;">
+                                        💬 Need Help?
+                                    </p>
+                                    <p style="margin:0;color:rgba(255,255,255,0.82);
+                                               font-size:13px;line-height:1.6;">
+                                        Our support team is ready to assist you.
+                                        Reach out at
+                                        <a href="mailto:support@stockmanagement.com"
+                                           style="color:#93c5fd;font-weight:600;text-decoration:none;">
+                                            support@stockmanagement.com
+                                        </a>
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- ─── FOOTER ─── -->
+                <tr>
+                    <td style="padding:36px 40px;text-align:center;
+                                border-top:1px solid #e2e8f0;margin-top:32px;">
+                        <!-- Divider already handled by border-top above via padding -->
+                        <p style="margin:0 0 6px;color:#374151;font-size:14px;font-weight:600;">
+                            Stock Management System
+                        </p>
+                        <p style="margin:0 0 16px;color:#9ca3af;font-size:13px;">
+                            This email was sent to ${email}
+                        </p>
+                        <p style="margin:0 0 12px;color:#9ca3af;font-size:12px;">
+                            © 2024 Stock Management System. All rights reserved.
+                        </p>
+                        <div>
+                            <a href="#"
+                               style="display:inline-block;margin:0 8px;color:#2563eb;
+                                      text-decoration:none;font-size:12px;">Privacy Policy</a>
+                            <span style="color:#d1d5db;">|</span>
+                            <a href="#"
+                               style="display:inline-block;margin:0 8px;color:#2563eb;
+                                      text-decoration:none;font-size:12px;">Terms of Service</a>
+                        </div>
+                    </td>
+                </tr>
+
+            </table>
+            <!-- /MAIN CARD -->
+
+            <!-- Bottom note -->
+            <table width="600" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="padding:20px;text-align:center;">
+                        <p style="margin:0;color:#9ca3af;font-size:12px;">
+                            If you did not expect this email, please contact your administrator immediately.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+        </td>
+    </tr>
+</table>
+</body>
+</html>

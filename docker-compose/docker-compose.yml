@@ -377,7 +377,7 @@ services:
       SPRING_MAIL_HOST: smtp.gmail.com
       SPRING_MAIL_PORT: 587
       SPRING_MAIL_USERNAME: houarimehdi7@gmail.com
-      SPRING_MAIL_PASSWORD: nnoivyxhebwhdhye
+      SPRING_MAIL_PASSWORD: jflhephmpxlznycj
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: true
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: true
     networks:

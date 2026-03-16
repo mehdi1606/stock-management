@@ -61,6 +61,13 @@ public class GatewayConfig {
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
                         .uri(authServiceUrl))
 
+                // Auth Service - JWT REQUIRED (audit log endpoints)
+                .route("auth-service-audit", r -> r
+                        .path("/api/audit/**")
+                        .filters(f -> f
+                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
+                        .uri(authServiceUrl))
+
                 // Product Service - JWT only
                 .route("product-service", r -> r
                         .path("/api/item-variants/**", "/api/categories/**", "/api/items/**")

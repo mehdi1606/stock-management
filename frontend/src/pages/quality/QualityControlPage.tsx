@@ -16,6 +16,7 @@ import { QualityControlFormModal } from '@/components/quality-controls/QualityCo
 import { QualityControlDetailModal } from '@/components/quality-controls/QualityControlDetailModal';
 import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
 import { toast } from 'react-hot-toast';
+import { confirmAction, promptInput } from '@/utils/confirmDialog';
 import { format } from 'date-fns';
 
 export const QualityControlsPage = () => {
@@ -162,9 +163,8 @@ export const QualityControlsPage = () => {
 
   // ✅ Quick Approve
   const handleQuickApprove = async (qc: QualityControl) => {
-    if (!window.confirm(`Approve quality control ${qc.controlNumber || qc.inspectionNumber || qc.id.slice(0, 8)}?`)) {
-      return;
-    }
+    const ok = await confirmAction('Approve Inspection', `Approve quality control ${qc.controlNumber || qc.inspectionNumber || qc.id.slice(0, 8)}?`, 'Approve');
+    if (!ok) return;
 
     try {
       await qualityService.approveQualityControl(qc.id);
@@ -178,7 +178,7 @@ export const QualityControlsPage = () => {
 
   // ✅ Quick Reject
   const handleQuickReject = async (qc: QualityControl) => {
-    const reason = window.prompt('Enter rejection reason:');
+    const reason = await promptInput('Reject Inspection', 'Reason for rejection', 'e.g. Failed quality thresholds…');
     if (!reason) return;
 
     try {

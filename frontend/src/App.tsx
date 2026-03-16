@@ -1,7 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { Lock } from 'lucide-react';
 import { STORAGE_KEYS } from '@/config/constants';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { SettingsProvider } from '@/contexts/SettingsContext';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS, type Permission } from '@/config/permissions';
 
 // Layout Components
 import { Header } from '@/components/Layout/Header';
@@ -48,22 +53,45 @@ import { AlertsPage } from '@/pages/Alerts/AlertsPage';
 // Profile Page
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 
-// Protected Route Component - FIXED VERSION
+// Settings Page
+import { SettingsPage } from '@/pages/settings/SettingsPage';
+
+// ─── Route Guards ─────────────────────────────────────────────────────────────
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // FIX: Check for 'access_token' instead of 'token'
   const isAuthenticated = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
+const AccessDenied = () => (
+  <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-neutral-400">
+    <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+      <Lock className="w-8 h-8" />
+    </div>
+    <div className="text-center">
+      <p className="text-lg font-bold text-neutral-700 dark:text-neutral-300">Access Denied</p>
+      <p className="text-sm text-neutral-500 mt-1">You don't have permission to view this page.</p>
+    </div>
+    <a href="/dashboard" className="px-4 py-2 text-sm font-semibold rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+      Back to Dashboard
+    </a>
+  </div>
+);
+
+// Route that requires both authentication and a specific permission
+const PermissionRoute = ({ children, permission }: { children: React.ReactNode; permission: Permission }) => {
+  const isAuthenticated = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  const { hasPermission } = usePermissions();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!hasPermission(permission)) return <AccessDenied />;
   return <>{children}</>;
 };
 
 // Main Layout Component with Header and Sidebar
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="flex min-h-screen bg-neutral-50 dark:bg-neutral-900">
+    <div className="flex min-h-screen" style={{ background: 'var(--theme-bg)', backgroundAttachment: 'fixed' }}>
       <Header />
       <Sidebar />
       <main className="flex-1 lg:ml-64 mt-16 p-4 lg:p-6">
@@ -77,8 +105,10 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <Router>
-      <Toaster 
+    <ThemeProvider>
+      <SettingsProvider>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 3000,
@@ -114,11 +144,9 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <DashboardPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.DASHBOARD_VIEW}>
+              <MainLayout><DashboardPage /></MainLayout>
+            </PermissionRoute>
           }
         />
 
@@ -126,33 +154,25 @@ function App() {
         <Route
           path="/products/items"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ItemsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.PRODUCTS_VIEW}>
+              <MainLayout><ItemsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
-        
         <Route
           path="/products/variants"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ItemVariantsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.PRODUCTS_VIEW}>
+              <MainLayout><ItemVariantsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
-        
         <Route
           path="/products/categories"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <CategoriesPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.CATEGORIES_VIEW}>
+              <MainLayout><CategoriesPage /></MainLayout>
+            </PermissionRoute>
           }
         />
 
@@ -160,65 +180,51 @@ function App() {
         <Route
           path="/inventory/lots"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <LotsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.LOTS_VIEW}>
+              <MainLayout><LotsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
-        
         <Route
           path="/inventory/serials"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <SerialsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.SERIALS_VIEW}>
+              <MainLayout><SerialsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
- <Route
+        <Route
           path="/inventory/Inventories"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <InventoryPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.INVENTORY_VIEW}>
+              <MainLayout><InventoryPage /></MainLayout>
+            </PermissionRoute>
           }
         />
+
         {/* Locations Routes */}
         <Route
           path="/locations/sites"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <SitesPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.LOCATIONS_VIEW}>
+              <MainLayout><SitesPage /></MainLayout>
+            </PermissionRoute>
           }
         />
-        
         <Route
           path="/locations/warehouses"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <WarehousesPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.LOCATIONS_VIEW}>
+              <MainLayout><WarehousesPage /></MainLayout>
+            </PermissionRoute>
           }
         />
-        
         <Route
           path="/locations/locations"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <LocationsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.LOCATIONS_VIEW}>
+              <MainLayout><LocationsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
 
@@ -226,11 +232,9 @@ function App() {
         <Route
           path="/movements"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <MovementsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.MOVEMENTS_VIEW}>
+              <MainLayout><MovementsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
         {/* <Route
@@ -259,31 +263,25 @@ function App() {
         <Route
           path="/quality/controls"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <QualityControlsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.QUALITY_VIEW}>
+              <MainLayout><QualityControlsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
         <Route
           path="/quality/attachments"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <QualityAttachmentsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.QUALITY_VIEW}>
+              <MainLayout><QualityAttachmentsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
         <Route
           path="/quality/quarantines"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <QuarantinesPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.QUARANTINE_MANAGE}>
+              <MainLayout><QuarantinesPage /></MainLayout>
+            </PermissionRoute>
           }
         />
 
@@ -291,23 +289,29 @@ function App() {
         <Route
           path="/alerts"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <AlertsPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <PermissionRoute permission={PERMISSIONS.ALERTS_VIEW}>
+              <MainLayout><AlertsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
 
-        {/* Profile Routes */}
+        {/* Profile Routes — any authenticated user */}
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
-              <MainLayout>
-                <ProfilePage />
-              </MainLayout>
+              <MainLayout><ProfilePage /></MainLayout>
             </ProtectedRoute>
+          }
+        />
+
+        {/* Settings Route */}
+        <Route
+          path="/settings"
+          element={
+            <PermissionRoute permission={PERMISSIONS.SETTINGS_VIEW}>
+              <MainLayout><SettingsPage /></MainLayout>
+            </PermissionRoute>
           }
         />
 
@@ -315,6 +319,8 @@ function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
+      </SettingsProvider>
+    </ThemeProvider>
   );
 }
 

@@ -34,7 +34,7 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'SUPERVISOR')")
     @Operation(summary = "Create inventory", description = "Create a new inventory record")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Inventory created successfully"),
@@ -51,7 +51,7 @@ public class InventoryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get inventory by ID", description = "Retrieve inventory details by ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Inventory found"),
@@ -67,7 +67,7 @@ public class InventoryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get all inventories", description = "Retrieve all inventory records")
     @ApiResponse(responseCode = "200", description = "List of inventories retrieved")
     public ResponseEntity<List<InventoryDTO>> getAllInventories() {
@@ -78,7 +78,7 @@ public class InventoryController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER')")
     @Operation(summary = "Update inventory", description = "Update an existing inventory record")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Inventory updated successfully"),
@@ -110,7 +110,7 @@ public class InventoryController {
     // ========== QUERY OPERATIONS ==========
 
     @GetMapping("/item/{itemId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get inventories by item", description = "Retrieve all inventory records for a specific item")
     public ResponseEntity<List<InventoryDTO>> getInventoriesByItem(
             @Parameter(description = "Item ID", required = true)
@@ -122,7 +122,7 @@ public class InventoryController {
     }
 
     @GetMapping("/warehouse/{warehouseId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get inventories by warehouse", description = "Retrieve all inventory records for a warehouse")
     public ResponseEntity<List<InventoryDTO>> getInventoriesByWarehouse(
             @PathVariable String warehouseId) {
@@ -133,7 +133,7 @@ public class InventoryController {
     }
 
     @GetMapping("/location/{locationId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get inventories by location", description = "Retrieve all inventory records at a location")
     public ResponseEntity<List<InventoryDTO>> getInventoriesByLocation(
             @PathVariable String locationId) {
@@ -144,7 +144,7 @@ public class InventoryController {
     }
 
     @GetMapping("/item/{itemId}/location/{locationId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get inventory by item and location", description = "Get specific inventory record")
     public ResponseEntity<InventoryDTO> getInventoryByItemAndLocation(
             @PathVariable String itemId,
@@ -156,7 +156,7 @@ public class InventoryController {
     }
 
     @GetMapping("/low-stock")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get low stock items", description = "Retrieve items below threshold quantity")
     public ResponseEntity<List<InventoryDTO>> getLowStockItems(
             @Parameter(description = "Threshold quantity")
@@ -168,7 +168,7 @@ public class InventoryController {
     }
 
     @GetMapping("/expiring")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get expiring items", description = "Retrieve items expiring within specified days")
     public ResponseEntity<List<InventoryDTO>> getExpiringItems(
             @Parameter(description = "Days from now")
@@ -182,7 +182,7 @@ public class InventoryController {
     // ========== INVENTORY OPERATIONS ==========
 
     @PostMapping("/{id}/adjust")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER')")
     @Operation(summary = "Adjust inventory quantity", description = "Adjust inventory quantity (cycle count, correction)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Quantity adjusted successfully"),
@@ -199,7 +199,7 @@ public class InventoryController {
     }
 
     @PostMapping("/{id}/reserve")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'ORDER_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER')")
     @Operation(summary = "Reserve inventory", description = "Reserve inventory quantity for order/transfer")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Inventory reserved successfully"),
@@ -216,7 +216,7 @@ public class InventoryController {
     }
 
     @PostMapping("/{id}/release")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'ORDER_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER')")
     @Operation(summary = "Release reservation", description = "Release reserved inventory quantity")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Reservation released successfully"),
@@ -236,7 +236,7 @@ public class InventoryController {
     // ========== ENRICHED RESPONSES (WITH ITEM DETAILS) ==========
 
     @GetMapping("/{id}/with-item")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get inventory with item details", description = "Get inventory with enriched item information from cache")
     public ResponseEntity<InventoryWithItemDTO> getInventoryWithItem(@PathVariable String id) {
         log.info("REST request to get inventory with item details: {}", id);
@@ -246,7 +246,7 @@ public class InventoryController {
     }
 
     @GetMapping("/location/{locationId}/with-items")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get inventories by location with item details", description = "Get all inventories at location with item info")
     public ResponseEntity<List<InventoryWithItemDTO>> getInventoriesWithItemByLocation(
             @PathVariable String locationId) {
@@ -257,7 +257,7 @@ public class InventoryController {
     }
 
     @GetMapping("/warehouse/{warehouseId}/with-items")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get inventories by warehouse with item details", description = "Get all inventories in warehouse with item info")
     public ResponseEntity<List<InventoryWithItemDTO>> getInventoriesWithItemByWarehouse(
             @PathVariable String warehouseId) {
@@ -270,7 +270,7 @@ public class InventoryController {
     // ========== AVAILABILITY CHECKS ==========
 
     @GetMapping("/check-availability")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'ORDER_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Check stock availability", description = "Check if sufficient stock is available")
     public ResponseEntity<Boolean> checkStockAvailability(
             @RequestParam String itemId,
@@ -284,7 +284,7 @@ public class InventoryController {
     }
 
     @GetMapping("/available-quantity")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_STAFF', 'ORDER_MANAGER', 'VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'MANAGER', 'QUALITY_MANAGER', 'SUPERVISOR', 'OPERATOR', 'PROCUREMENT', 'AUDITOR', 'USER')")
     @Operation(summary = "Get available quantity", description = "Get available quantity for item at location")
     public ResponseEntity<Double> getAvailableQuantity(
             @RequestParam String itemId,
